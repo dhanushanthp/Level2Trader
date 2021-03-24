@@ -99,13 +99,13 @@ class BidAsk:
         :return: table data
         """
         # Time
-        lst_time = sorted(self.bid_time_accumulator.keys())
+        lst_time = sorted(self.bid_time_accumulator.keys())[-self.last_x_min:]
         # value
         bid_lst_price = sorted(
             list((set(itertools.chain.from_iterable([list(self.bid_time_accumulator[i].keys()) for i in lst_time])))))
         ask_lst_price = sorted(
             list((set(itertools.chain.from_iterable([list(self.ask_time_accumulator[i].keys()) for i in lst_time])))))
-        lst_price = sorted(list(set(bid_lst_price + ask_lst_price)))
+        lst_price = sorted(list(set(bid_lst_price + ask_lst_price)), reverse=True)
 
         table_data = []
         for ele_time in lst_time:
@@ -118,22 +118,22 @@ class BidAsk:
                         self.color_size(self.bid_time_accumulator[ele_time][ele_price],
                                         self.ask_time_accumulator[ele_time][ele_price]))
                 # Price exist in BID but Not in ASK
-                elif ele_price in self.bid_time_accumulator[ele_time] and ele_price not in self.ask_time_accumulator[
-                    ele_time]:
+                elif ele_price in self.bid_time_accumulator[ele_time] and \
+                        ele_price not in self.ask_time_accumulator[ele_time]:
                     # Add the volume size
                     value_data.append(self.color_size(self.bid_time_accumulator[ele_time][ele_price], 0))
                 # Price exist in ASK but Not in BID
-                elif ele_price not in self.bid_time_accumulator[ele_time] and ele_price in self.ask_time_accumulator[
-                    ele_time]:
-                    # Add the volumne size
+                elif ele_price not in self.bid_time_accumulator[ele_time] and \
+                        ele_price in self.ask_time_accumulator[ele_time]:
+                    # Add the volume size
                     value_data.append(self.color_size(0, self.ask_time_accumulator[ele_time][ele_price]))
                 else:
                     value_data.append('')
             table_data.append(value_data)
 
-        table_data.insert(0, lst_price)
+        table_data.append(lst_price)
         table_data = list(map(list, zip(*table_data)))
-        table_data.insert(0, [''] + lst_time)
+        table_data.insert(0, lst_time + [''])
 
         # Create table instance
         table_instance = AsciiTable(table_data, f'****  {self.ticker}  ****')

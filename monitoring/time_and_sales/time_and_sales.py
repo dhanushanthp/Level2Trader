@@ -88,9 +88,9 @@ class TimeAndSales:
             table_data.append(value_data)
 
         # Add price and time accordingly as header and index
-        table_data.insert(0, lst_price)
+        table_data.append(lst_price)
         table_data = list(map(list, zip(*table_data)))
-        table_data.insert(0, [''] + lst_time)
+        table_data.insert(0, lst_time + [''])
 
         # Create table instance
         table_instance = AsciiTable(table_data, f'****  {self.ticker}  ****')
