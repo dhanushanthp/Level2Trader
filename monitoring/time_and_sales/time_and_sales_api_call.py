@@ -5,6 +5,7 @@ from ibapi.client import TickAttribLast, TickerId
 import sys
 import datetime
 from time_and_sales import TimeAndSales
+from numpy import random
 
 
 class IBapi(EWrapper, EClient):
@@ -42,7 +43,7 @@ def main():
     ticker = str(sys.argv[1])
     time_range = int(sys.argv[2])
     app = IBapi(ticker, time_range)
-    app.connect(host='127.0.0.1', port=7497, clientId=0)
+    app.connect(host='127.0.0.1', port=7497, clientId=random.randint(100))
     # Create contract object
     contract = Contract()
     contract.symbol = ticker
@@ -52,7 +53,8 @@ def main():
     contract.primaryExchange = 'NASDAQ'
 
     # Request historical candles
-    app.reqTickByTickData(reqId=19001, contract=contract, tickType="Last", numberOfTicks=0, ignoreSize=True)
+    app.reqTickByTickData(reqId=random.randint(1000), contract=contract, tickType="Last", numberOfTicks=0,
+                          ignoreSize=True)
 
     app.run()
     # app.cancelTickByTickData(1)

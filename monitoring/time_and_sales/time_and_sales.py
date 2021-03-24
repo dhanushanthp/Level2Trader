@@ -42,6 +42,7 @@ class TimeAndSales:
 
         # Adjust for 10 sec
         var_time = var_time[:-1]
+        var_value = round(var_value, 2)
 
         """
         time accumulator dictionary is a dictionary of dictionary data structure. 

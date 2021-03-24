@@ -31,29 +31,52 @@ class BidAsk:
     def color_size(self, bid: int, ask: int):
         # str_bid = ''
         # str_ask = ''
-        if bid > 8000:
-            str_bid = Color('{autored}' + self.add_space_bid(str(bid)) + '{/autored}')
-        elif bid > 5000:
+        # if bid > 8000:
+        #     str_bid = Color('{autored}' + self.add_space_bid(str(bid)) + '{/autored}')
+        # elif bid > 5000:
+        #     str_bid = Color('{autocyan}' + self.add_space_bid(str(bid)) + '{/autocyan}')
+        # elif bid > 3000:
+        #     str_bid = Color('{autoyellow}' + self.add_space_bid(str(bid)) + '{/autoyellow}')
+        # else:
+        #     str_bid = Color(self.add_space_bid(str(bid)))
+
+        if bid > 200000:
+            str_bid = Color('{autobggreen}{autoblack}' + self.add_space_bid(str(bid)) + '{/autoblack}{/autobggreen}')
+        elif bid > 150000:
+            str_bid = Color('{autogreen}' + self.add_space_bid(str(bid)) + '{/autogreen}')
+        elif bid > 100000:
+            str_bid = Color('{autobgblue}' + self.add_space_bid(str(bid)) + '{/autobgblue}')
+        elif bid > 50000:
+            str_bid = Color('{autoblue}' + self.add_space_bid(str(bid)) + '{/autoblue}')
+        elif bid > 25000:
             str_bid = Color('{autocyan}' + self.add_space_bid(str(bid)) + '{/autocyan}')
-        elif bid > 3000:
+        elif bid > 10000:
             str_bid = Color('{autoyellow}' + self.add_space_bid(str(bid)) + '{/autoyellow}')
         else:
             str_bid = Color(self.add_space_bid(str(bid)))
 
-        if ask > 8000:
-            str_ask = Color('{autored}' + self.add_space_ask(str(ask)) + '{/autored}')
-        elif ask > 5000:
-            str_ask = Color('{autocyan}' + self.add_space_ask(str(ask)) + '{/autocyan}')
-        elif ask > 3000:
-            str_ask = Color('{autoyellow}' + self.add_space_ask(str(ask)) + '{/autoyellow}')
+        if ask > 200000:
+            str_ask = Color('{autobggreen}{autoblack}' + self.add_space_bid(str(ask)) + '{/autoblack}{/autobggreen}')
+        elif ask > 150000:
+            str_ask = Color('{autogreen}' + self.add_space_bid(str(ask)) + '{/autogreen}')
+        elif ask > 100000:
+            str_ask = Color('{autobgblue}' + self.add_space_bid(str(ask)) + '{/autobgblue}')
+        elif ask > 50000:
+            str_ask = Color('{autoblue}' + self.add_space_bid(str(ask)) + '{/autoblue}')
+        elif ask > 25000:
+            str_ask = Color('{autocyan}' + self.add_space_bid(str(ask)) + '{/autocyan}')
+        elif ask > 10000:
+            str_ask = Color('{autoyellow}' + self.add_space_bid(str(ask)) + '{/autoyellow}')
         else:
-            str_ask = Color(self.add_space_ask(str(ask)))
+            str_ask = Color(self.add_space_bid(str(ask)))
 
         return str_bid + ' ➜ ' + str_ask
 
     def data_generator(self, var_time: str, bid_price: float, bid_size: int, ask_price: float, ask_size: int):
         # Adjust for 10 sec
         var_time = var_time[:-1]
+        bid_price = round(bid_price, 2)
+        ask_price = round(ask_price, 2)
 
         """
         time accumulator dictionary is a dictionary of dictionary data structure. 
