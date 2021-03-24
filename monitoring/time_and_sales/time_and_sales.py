@@ -67,9 +67,9 @@ class TimeAndSales:
             self.time_accumulator[var_time] = value_dict
 
         # Call function to generate table
-        print(self.data_table_generator() + '\n')
+        print(self.data_table_generator(var_value) + '\n')
 
-    def data_table_generator(self):
+    def data_table_generator(self, current_price):
         """
         Visualize the table
         :return: table data
@@ -80,6 +80,12 @@ class TimeAndSales:
         lst_price = sorted(
             list((set(itertools.chain.from_iterable([list(self.time_accumulator[i].keys()) for i in lst_time])))),
             reverse=True)
+
+        # Balance the price range
+        price_index = lst_price.index(current_price)
+        min_range = 0 if price_index - 20 < 0 else price_index - 20
+        max_range = price_index + 20
+        lst_price = lst_price[min_range:max_range]
 
         table_data = []
         for ele_time in lst_time:
