@@ -98,6 +98,11 @@ class TimeAndSales:
                     value_data.append('')
             table_data.append(value_data)
 
+        # Add current price pointer
+        lst_price[price_index] = f'> {current_price}'
+        # Add leading space
+        lst_price = [str(i).rjust(len(str(current_price)) + 2) for i in lst_price]
+
         # Add price and time accordingly as header and index
         table_data.append(lst_price)
         table_data = list(map(list, zip(*table_data)))
