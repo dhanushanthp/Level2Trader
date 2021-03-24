@@ -29,17 +29,6 @@ class BidAsk:
             return string
 
     def color_size(self, bid: int, ask: int):
-        # str_bid = ''
-        # str_ask = ''
-        # if bid > 8000:
-        #     str_bid = Color('{autored}' + self.add_space_bid(str(bid)) + '{/autored}')
-        # elif bid > 5000:
-        #     str_bid = Color('{autocyan}' + self.add_space_bid(str(bid)) + '{/autocyan}')
-        # elif bid > 3000:
-        #     str_bid = Color('{autoyellow}' + self.add_space_bid(str(bid)) + '{/autoyellow}')
-        # else:
-        #     str_bid = Color(self.add_space_bid(str(bid)))
-
         if bid > 200000:
             str_bid = Color('{autobggreen}{autoblack}' + self.add_space_bid(str(bid)) + '{/autoblack}{/autobggreen}')
         elif bid > 150000:
@@ -114,9 +103,9 @@ class BidAsk:
             self.ask_time_accumulator[var_time] = value_dict
 
         # Call function to generate table
-        print(self.data_table_generator(bid_price) + '\n')
+        print(self.data_table_generator(bid_price, ask_price) + '\n')
 
-    def data_table_generator(self, current_price: float):
+    def data_table_generator(self, bid_price: float, ask_price: float):
         """
         Visualize the table
         :return: table data
@@ -131,9 +120,10 @@ class BidAsk:
 
         lst_price = sorted(list(set(bid_lst_price + ask_lst_price)), reverse=True)
         # Balance the price range
-        price_index = lst_price.index(current_price)
-        min_range = 0 if price_index - 20 < 0 else price_index - 20
-        max_range = price_index + 20
+        bid_index = lst_price.index(bid_price)
+        ask_index = lst_price.index(ask_price)
+        min_range = 0 if bid_index - 20 < 0 else bid_index - 20
+        max_range = ask_index + 20
         lst_price = lst_price[min_range:max_range]
 
         table_data = []
@@ -159,6 +149,13 @@ class BidAsk:
                 else:
                     value_data.append('')
             table_data.append(value_data)
+
+        # Add current price pointer
+        lst_price = ['{:0.2f}'.format(i) for i in lst_price]
+        lst_price[bid_index] = f'- {bid_price}'
+        lst_price[ask_index] = f'+ {ask_price}'
+        # Add leading space
+        lst_price = [str(i).rjust(len(str(bid_price)) + 2) for i in lst_price]
 
         table_data.append(lst_price)
         table_data = list(map(list, zip(*table_data)))

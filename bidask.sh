@@ -1,4 +1,4 @@
-max=20
+max=100
 number_of_records=6
 for l in $(seq 1 $max); do
   echo "$l"
