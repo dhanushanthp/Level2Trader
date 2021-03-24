@@ -8,10 +8,10 @@ from time_and_sales import TimeAndSales
 
 
 class IBapi(EWrapper, EClient):
-    def __init__(self, ticker):
+    def __init__(self, ticker, time_range=6):
         EClient.__init__(self, self)
         self.data = []  # Initialize variable to store candle
-        self.time_and_sales = TimeAndSales(ticker=ticker, last_x_min=1)
+        self.time_and_sales = TimeAndSales(ticker=ticker, multiple_of_10sec=time_range)
 
     def error(self, reqId: TickerId, errorCode: int, errorString: str):
         print(f"{reqId}, {errorCode}, {errorString}")
@@ -40,7 +40,8 @@ class IBapi(EWrapper, EClient):
 
 def main():
     ticker = str(sys.argv[1])
-    app = IBapi(ticker)
+    time_range = int(sys.argv[2])
+    app = IBapi(ticker, time_range)
     app.connect(host='127.0.0.1', port=7497, clientId=0)
     # Create contract object
     contract = Contract()
@@ -55,7 +56,7 @@ def main():
 
     app.run()
     # app.cancelTickByTickData(1)
-    # app.disconnect()
+    app.disconnect()
 
 
 main()

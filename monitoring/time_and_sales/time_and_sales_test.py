@@ -5,7 +5,7 @@ file1 = open('test_data/last.csv', 'r')
 lines = file1.readlines()
 lines = lines[1:]
 
-time_sale_obj = TimeAndSales(ticker='AAPL', last_x_min=2)
+time_sale_obj = TimeAndSales(ticker='AAPL', multiple_of_10sec=6)
 for line in lines:
     time.sleep(0.5)
     # Select individual price and size by the feed

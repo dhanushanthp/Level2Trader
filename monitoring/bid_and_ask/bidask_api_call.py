@@ -8,10 +8,10 @@ import datetime
 
 
 class IBapi(EWrapper, EClient):
-    def __init__(self, ticker):
+    def __init__(self, ticker, time_range=6):
         EClient.__init__(self, self)
         self.data = []  # Initialize variable to store candle
-        self.time_and_sales = BidAsk(ticker=ticker, last_x_min=1)
+        self.time_and_sales = BidAsk(ticker=ticker, multiple_of_10sec=time_range)
 
     def error(self, reqId: TickerId, errorCode: int, errorString: str):
         print(f"{reqId}, {errorCode}, {errorString}")
@@ -34,14 +34,15 @@ class IBapi(EWrapper, EClient):
 
                                  askSize, tickAttribBidAsk)
 
-        self.time_and_sales.data_generator(datetime.datetime.fromtimestamp(time).strftime("%H:%M:%S"), bidPrice, bidSize, askPrice, askSize)
-
+        self.time_and_sales.data_generator(datetime.datetime.fromtimestamp(time).strftime("%H:%M:%S"), bidPrice,
+                                           bidSize, askPrice, askSize)
 
 
 def main():
     ticker = str(sys.argv[1])
-    app = IBapi(ticker)
-    app.connect(host='127.0.0.1', port=7497, clientId=0)
+    time_range = int(sys.argv[2])
+    app = IBapi(ticker, time_range)
+    app.connect(host='127.0.0.1', port=7497, clientId=1)
     # Create contract object
     contract = Contract()
     contract.symbol = ticker
@@ -55,7 +56,7 @@ def main():
 
     app.run()
     # app.cancelTickByTickData(1)
-    # app.disconnect()
+    app.disconnect()
 
 
 main()

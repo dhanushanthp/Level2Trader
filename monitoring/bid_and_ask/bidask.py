@@ -5,10 +5,10 @@ from terminaltables import SingleTable
 
 
 class BidAsk:
-    def __init__(self, ticker, last_x_min=1, length=6):
+    def __init__(self, ticker, multiple_of_10sec=6, length=6):
         self.bid_time_accumulator = dict()
         self.ask_time_accumulator = dict()
-        self.last_x_min = last_x_min * 6
+        self.last_x_min = multiple_of_10sec
         self.ticker = ticker
         self.length = length
 

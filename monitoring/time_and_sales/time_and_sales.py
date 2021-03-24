@@ -4,9 +4,9 @@ from colorclass import Color
 
 
 class TimeAndSales:
-    def __init__(self, ticker, last_x_min=1):
+    def __init__(self, ticker, multiple_of_10sec=6):
         self.time_accumulator = dict()
-        self.last_x_min = last_x_min * 6
+        self.last_x_min = multiple_of_10sec
         self.ticker = ticker
 
     @staticmethod
@@ -17,11 +17,15 @@ class TimeAndSales:
         :return:
         """
 
-        if size > 8000:
-            return Color('{autored}' + str(size) + '{/autored}')
+        if size > 20000:
+            return Color('{autobggreen}{autoblack}' + str(size) + '{/autoblack}{/autobggreen}')
+        elif size > 15000:
+            return Color('{autogreen}' + str(size) + '{/autogreen}')
+        elif size > 10000:
+            return Color('{autobgblue}' + str(size) + '{/autobgblue}')
         elif size > 5000:
-            return Color('{autocyan}' + str(size) + '{/autocyan}')
-        elif size > 2000:
+            return Color('{autoblue}' + str(size) + '{/autoblue}')
+        elif size > 3000:
             return Color('{autoyellow}' + str(size) + '{/autoyellow}')
         else:
             return Color(str(size))
