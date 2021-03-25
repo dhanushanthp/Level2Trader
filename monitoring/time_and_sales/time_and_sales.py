@@ -75,14 +75,27 @@ class TimeAndSales:
 
         # Pick the sizes which are visible in the time frame
         sizes = sorted(set(itertools.chain.from_iterable([self.time_accumulator[i].values() for i in lst_time])))
-
         colour_dictionary = self.get_colour_by_range(sizes)
+
+        # Price histogram generation
+        price_size = [self.time_accumulator[i] for i in lst_time]
+
+        price_size_agg = dict()
+        for ps in price_size:
+            for p in ps.keys():
+                if p in price_size_agg:
+                    price_size_agg[p] = price_size_agg[p] + ps[p]
+                else:
+                    price_size_agg[p] = ps[p]
 
         # Balance the price range
         price_index = lst_price.index(current_price)
         min_range = 0 if price_index - 20 < 0 else price_index - 20
         max_range = price_index + 20
         lst_price = lst_price[min_range:max_range]
+
+        # New filtered price by range
+        price_hist_agg = [round(price_size_agg[i] / 1000) * '*' for i in lst_price]
 
         table_data = []
         for ele_time in lst_time:
@@ -104,11 +117,9 @@ class TimeAndSales:
             print(price_index, current_price)
             pass
 
-        # Add leading space
-        # lst_price = [str(i).rjust(len(str(current_price)) + 2) for i in lst_price]
-
         # Add price and time accordingly as header and index
         table_data.append(lst_price)
+        table_data.append(price_hist_agg)
         table_data = list(map(list, zip(*table_data)))
         table_data.insert(0, lst_time + [''])
 

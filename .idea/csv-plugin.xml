@@ -24,6 +24,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/monitoring/time_and_sales/time_and_sales.py">
+          <value>
+            <Attribute>
+              <option name="separator" value=":" />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/time_and_sales_monitoring/time_and_sales_visualizer.py">
           <value>
             <Attribute>
