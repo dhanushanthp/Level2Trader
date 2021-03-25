@@ -11,11 +11,11 @@ for line in lines:
     time.sleep(0.5)
     # Select individual price and size by the feed
     line_split = line.split(',')
-    time = line_split[0].split(' ')[-1]
+    tick_time = line_split[0].split(' ')[-1]
     bid_price = float(line_split[1])
     bid_size = int(line_split[2])
     ask_price = float(line_split[3])
     ask_size = int(line_split[4])
     last_price = float(line_split[5])
     last_size = int(line_split[6])
-    time_sale_obj.data_generator(time, bid_price, bid_size, ask_price, ask_size, last_price, last_size)
+    time_sale_obj.data_generator(tick_time, bid_price, bid_size, ask_price, ask_size, last_price, last_size)
