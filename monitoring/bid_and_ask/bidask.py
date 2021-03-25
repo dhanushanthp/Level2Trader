@@ -2,6 +2,8 @@ import itertools
 from terminaltables import AsciiTable
 from colorclass import Color
 from terminaltables import SingleTable
+import numpy as np
+from colr import color
 
 
 class BidAsk:
@@ -11,8 +13,29 @@ class BidAsk:
         self.last_x_min = multiple_of_10sec
         self.ticker = ticker
         self.length = length
+        # white,white, yellow,yellow,green
+        self.colors_bid = [(255, 255, 255), (255, 255, 255), (255, 255, 0), (255, 255, 0), (0, 255, 0)]
+        # white,white, yellow,yellow,red
+        self.colors_ask = [(255, 255, 255), (255, 255, 255), (255, 255, 0), (255, 255, 0), (255, 0, 0)]
+
+    def get_colour_by_bid(self, sizes: list) -> dict:
+        colour_mapping = dict()
+        values = np.array_split(np.array(sizes), len(self.colors_bid))
+        for i, val_lst in enumerate(values):
+            for size in val_lst:
+                colour_mapping[size] = self.colors_bid[i]
+        return colour_mapping
+
+    def get_colour_by_ask(self, sizes: list) -> dict:
+        colour_mapping = dict()
+        values = np.array_split(np.array(sizes), len(self.colors_ask))
+        for i, val_lst in enumerate(values):
+            for size in val_lst:
+                colour_mapping[size] = self.colors_ask[i]
+        return colour_mapping
 
     def add_space_ask(self, string: str):
+        string = str(string)
         string_length = len(string)
         change = self.length - string_length
         if change > 0:
@@ -21,45 +44,13 @@ class BidAsk:
             return string
 
     def add_space_bid(self, string: str):
+        string = str(string)
         string_length = len(string)
         change = self.length - string_length
         if change > 0:
             return string.rjust(self.length)
         else:
             return string
-
-    def color_size(self, bid: int, ask: int):
-        if bid > 200000:
-            str_bid = Color('{autobggreen}{autoblack}' + self.add_space_bid(str(bid)) + '{/autoblack}{/autobggreen}')
-        elif bid > 150000:
-            str_bid = Color('{autogreen}' + self.add_space_bid(str(bid)) + '{/autogreen}')
-        elif bid > 100000:
-            str_bid = Color('{autobgblue}' + self.add_space_bid(str(bid)) + '{/autobgblue}')
-        elif bid > 50000:
-            str_bid = Color('{autoblue}' + self.add_space_bid(str(bid)) + '{/autoblue}')
-        elif bid > 25000:
-            str_bid = Color('{autocyan}' + self.add_space_bid(str(bid)) + '{/autocyan}')
-        elif bid > 10000:
-            str_bid = Color('{autoyellow}' + self.add_space_bid(str(bid)) + '{/autoyellow}')
-        else:
-            str_bid = Color(self.add_space_bid(str(bid)))
-
-        if ask > 200000:
-            str_ask = Color('{autobggreen}{autoblack}' + self.add_space_bid(str(ask)) + '{/autoblack}{/autobggreen}')
-        elif ask > 150000:
-            str_ask = Color('{autogreen}' + self.add_space_bid(str(ask)) + '{/autogreen}')
-        elif ask > 100000:
-            str_ask = Color('{autobgblue}' + self.add_space_bid(str(ask)) + '{/autobgblue}')
-        elif ask > 50000:
-            str_ask = Color('{autoblue}' + self.add_space_bid(str(ask)) + '{/autoblue}')
-        elif ask > 25000:
-            str_ask = Color('{autocyan}' + self.add_space_bid(str(ask)) + '{/autocyan}')
-        elif ask > 10000:
-            str_ask = Color('{autoyellow}' + self.add_space_bid(str(ask)) + '{/autoyellow}')
-        else:
-            str_ask = Color(self.add_space_bid(str(ask)))
-
-        return str_bid + ' ➜ ' + str_ask
 
     def data_generator(self, var_time: str, bid_price: float, bid_size: int, ask_price: float, ask_size: int):
         # Adjust for 10 sec
@@ -119,6 +110,17 @@ class BidAsk:
         ask_lst_price = sorted(
             list((set(itertools.chain.from_iterable([list(self.ask_time_accumulator[i].keys()) for i in lst_time])))))
 
+        # Pick the sizes which are visible in the time frame
+        bid_sizes = sorted(
+            set(itertools.chain.from_iterable([self.bid_time_accumulator[i].values() for i in lst_time])))
+        # Pick the sizes which are visible in the time frame
+        ask_sizes = sorted(
+            set(itertools.chain.from_iterable([self.ask_time_accumulator[i].values() for i in lst_time])))
+
+        # Creation of color dictionary
+        bid_colour_dictionary = self.get_colour_by_bid(bid_sizes)
+        ask_colour_dictionary = self.get_colour_by_ask(ask_sizes)
+
         lst_price = sorted(list(set(bid_lst_price + ask_lst_price)), reverse=True)
         # Balance the price range
         bid_index = None
@@ -141,19 +143,36 @@ class BidAsk:
                 # Price from both bid and ask
                 if ele_price in self.bid_time_accumulator[ele_time] and \
                         ele_price in self.ask_time_accumulator[ele_time]:
+                    bid_size = self.bid_time_accumulator[ele_time][ele_price]
+                    ask_size = self.ask_time_accumulator[ele_time][ele_price]
                     value_data.append(
-                        self.color_size(self.bid_time_accumulator[ele_time][ele_price],
-                                        self.ask_time_accumulator[ele_time][ele_price]))
+                        color(self.add_space_bid(bid_size), fore=bid_colour_dictionary[bid_size], back=(0, 0, 0)) +
+                        ' ➜ ' +
+                        color(self.add_space_ask(ask_size), fore=ask_colour_dictionary[ask_size], back=(0, 0, 0)))
+
+                    # value_data.append(
+                    #     self.color_size(self.bid_time_accumulator[ele_time][ele_price],
+                    #                     self.ask_time_accumulator[ele_time][ele_price]))
                 # Price exist in BID but Not in ASK
                 elif ele_price in self.bid_time_accumulator[ele_time] and \
                         ele_price not in self.ask_time_accumulator[ele_time]:
                     # Add the volume size
-                    value_data.append(self.color_size(self.bid_time_accumulator[ele_time][ele_price], 0))
+
+                    bid_size = self.bid_time_accumulator[ele_time][ele_price]
+                    value_data.append(
+                        color(self.add_space_bid(bid_size), fore=bid_colour_dictionary[bid_size], back=(0, 0, 0)) +
+                        f' ➜ {self.add_space_ask("0")}')
+
+                    # value_data.append(self.color_size(self.bid_time_accumulator[ele_time][ele_price], 0))
                 # Price exist in ASK but Not in BID
                 elif ele_price not in self.bid_time_accumulator[ele_time] and \
                         ele_price in self.ask_time_accumulator[ele_time]:
                     # Add the volume size
-                    value_data.append(self.color_size(0, self.ask_time_accumulator[ele_time][ele_price]))
+                    ask_size = self.ask_time_accumulator[ele_time][ele_price]
+                    value_data.append(f'{self.add_space_bid("0")} ➜ ' +
+                                      color(self.add_space_ask(ask_size), fore=ask_colour_dictionary[ask_size],
+                                            back=(0, 0, 0)))
+                    # value_data.append(self.color_size(0, self.ask_time_accumulator[ele_time][ele_price]))
                 else:
                     value_data.append('')
             table_data.append(value_data)
@@ -161,8 +180,12 @@ class BidAsk:
         # Add current price pointer
         lst_price = ['{:0.2f}'.format(i) for i in lst_price]
         # '\033[1m'  add the boldness the text
-        lst_price[bid_index] = Color('{autogreen}' + '\033[1m' + str(bid_price) + '{/autogreen}')
-        lst_price[ask_index] = Color('{autored}' + '\033[1m' + str(ask_price) + '{/autored}')
+        try:
+            lst_price[bid_index] = Color('{autogreen}' + '\033[1m' + str(bid_price) + '{/autogreen}')
+            lst_price[ask_index] = Color('{autored}' + '\033[1m' + str(ask_price) + '{/autored}')
+        except IndexError:
+            print(bid_index, bid_price, ask_index, ask_price)
+            pass
 
         table_data.append(lst_price)
         table_data = list(map(list, zip(*table_data)))
