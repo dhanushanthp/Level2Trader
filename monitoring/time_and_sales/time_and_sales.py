@@ -1,6 +1,8 @@
 import itertools
 from terminaltables import AsciiTable
 from colorclass import Color
+import numpy as np
+from colr import color
 
 
 class TimeAndSales:
@@ -8,27 +10,16 @@ class TimeAndSales:
         self.time_accumulator = dict()
         self.last_x_min = multiple_of_10sec
         self.ticker = ticker
+        # white, yellow,blue,green,red
+        self.colors = [(255, 255, 255), (255, 255, 0), (0, 255, 255), (0, 255, 0), (255, 0, 0)]
 
-    @staticmethod
-    def color_size(size: int):
-        """
-
-        :param size:
-        :return:
-        """
-
-        if size > 20000:
-            return Color('{autobggreen}{autoblack}' + str(size) + '{/autoblack}{/autobggreen}')
-        elif size > 15000:
-            return Color('{autogreen}' + str(size) + '{/autogreen}')
-        elif size > 10000:
-            return Color('{autobgblue}' + str(size) + '{/autobgblue}')
-        elif size > 5000:
-            return Color('{autoblue}' + str(size) + '{/autoblue}')
-        elif size > 3000:
-            return Color('{autoyellow}' + str(size) + '{/autoyellow}')
-        else:
-            return Color(str(size))
+    def get_colour_by_range(self, sizes: list) -> dict:
+        colour_mapping = dict()
+        values = np.array_split(np.array(sizes), 5)
+        for i, val_lst in enumerate(values):
+            for size in val_lst:
+                colour_mapping[size] = self.colors[i]
+        return colour_mapping
 
     def data_generator(self, var_time: str, var_value: float, var_size: int, var_exchange: str):
         """
@@ -82,6 +73,11 @@ class TimeAndSales:
             list((set(itertools.chain.from_iterable([list(self.time_accumulator[i].keys()) for i in lst_time])))),
             reverse=True)
 
+        # Pick the sizes which are visible in the time frame
+        sizes = sorted(set(itertools.chain.from_iterable([self.time_accumulator[i].values() for i in lst_time])))
+
+        colour_dictionary = self.get_colour_by_range(sizes)
+
         # Balance the price range
         price_index = lst_price.index(current_price)
         min_range = 0 if price_index - 20 < 0 else price_index - 20
@@ -94,13 +90,20 @@ class TimeAndSales:
             for ele_price in lst_price:
                 if ele_price in self.time_accumulator[ele_time]:
                     # Add the volume size
-                    value_data.append(self.color_size(self.time_accumulator[ele_time][ele_price]))
+                    # value_data.append(self.color_size(self.time_accumulator[ele_time][ele_price]))
+                    size = self.time_accumulator[ele_time][ele_price]
+                    value_data.append(color(size, fore=colour_dictionary[size], back=(0, 0, 0)))
                 else:
                     value_data.append('')
             table_data.append(value_data)
 
         # Add current price pointer
-        lst_price[price_index] = Color('{autored}' + '\033[1m' + str(current_price) + '{/autored}')
+        try:
+            lst_price[price_index] = Color('{autored}' + '\033[1m' + str(current_price) + '{/autored}')
+        except IndexError:
+            print(price_index, current_price)
+            pass
+
         # Add leading space
         # lst_price = [str(i).rjust(len(str(current_price)) + 2) for i in lst_price]
 
