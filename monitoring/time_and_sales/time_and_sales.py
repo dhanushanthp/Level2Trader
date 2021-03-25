@@ -58,7 +58,7 @@ class TimeAndSales:
             self.time_accumulator[var_time] = value_dict
 
         # Call function to generate table
-        print(chr(27) + "[2J")
+        # print(chr(27) + "[2J")
         print(self.data_table_generator(var_value) + '\n')
 
     def data_table_generator(self, current_price):
