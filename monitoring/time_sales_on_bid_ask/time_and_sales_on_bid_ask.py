@@ -67,67 +67,74 @@ class TimeSalesBidAsk:
         The value will be updated through the iteration process by finding time and price accordingly
         """
 
-        if closest_price is bid_price:
-            # price on bid
-            if time in self.time_accumulator_on_bid:
-                # If time already exist in dictionary
-                if closest_price in self.time_accumulator_on_bid[time]:
+        """
+        Create dummy entry for time and prices to maintains the keys across bid and ask dictionary
+        """
+        if time in self.time_accumulator_on_bid:
+            # If time already exist in dictionary
+            if closest_price in self.time_accumulator_on_bid[time]:
+                if closest_price == bid_price:
                     # Get the value dictionary by time and price and update the size
                     self.time_accumulator_on_bid[time][closest_price] = self.time_accumulator_on_bid[time][
                                                                             closest_price] + last_size
                 else:
+                    # Get the value dictionary by time and price and update the size
+                    self.time_accumulator_on_bid[time][closest_price] = self.time_accumulator_on_bid[time][
+                                                                            closest_price] + 0
+            else:
+                if closest_price == bid_price:
                     # Time exist but the price is not exist, create a element with price and size
                     self.time_accumulator_on_bid[time][closest_price] = last_size
-
-            else:
-                # New element creation with time, price and size
-                # Create value dictionary with size
-                value_dict = dict()
+                else:
+                    # Time exist but the price is not exist, create a element with price and size
+                    self.time_accumulator_on_bid[time][closest_price] = 0
+        else:
+            # New element creation with time, price and size
+            # Create value dictionary with size
+            value_dict = dict()
+            if closest_price == bid_price:
                 value_dict[closest_price] = last_size
-                # Create time dictionary with value
-                self.time_accumulator_on_bid[time] = value_dict
-        elif closest_price is ask_price:
-            # price on ask
-            if time in self.time_accumulator_on_ask:
-                # If time already exist in dictionary
-                if closest_price in self.time_accumulator_on_ask[time]:
+            else:
+                value_dict[closest_price] = 0
+
+            # Create time dictionary with value
+            self.time_accumulator_on_bid[time] = value_dict
+
+        """
+        Creation on ASK Price
+        """
+        if time in self.time_accumulator_on_ask:
+            # If time already exist in dictionary
+            if closest_price in self.time_accumulator_on_ask[time]:
+                if closest_price == ask_price:
                     # Get the value dictionary by time and price and update the size
                     self.time_accumulator_on_ask[time][closest_price] = self.time_accumulator_on_ask[time][
                                                                             closest_price] + last_size
                 else:
+                    # Get the value dictionary by time and price and update the size
+                    self.time_accumulator_on_ask[time][closest_price] = self.time_accumulator_on_ask[time][
+                                                                            closest_price] + 0
+            else:
+                if closest_price == ask_price:
                     # Time exist but the price is not exist, create a element with price and size
                     self.time_accumulator_on_ask[time][closest_price] = last_size
-
-            else:
-                # New element creation with time, price and size
-                # Create value dictionary with size
-                value_dict = dict()
-                value_dict[closest_price] = last_size
-                # Create time dictionary with value
-                self.time_accumulator_on_ask[time] = value_dict
-        else:
-            # price in middle
-            if time in self.time_accumulator_on_mid:
-                # If time already exist in dictionary
-                if closest_price in self.time_accumulator_on_mid[time]:
-                    # Get the value dictionary by time and price and update the size
-                    self.time_accumulator_on_mid[time][closest_price] = self.time_accumulator_on_mid[time][
-                                                                            closest_price] + last_size
                 else:
                     # Time exist but the price is not exist, create a element with price and size
-                    self.time_accumulator_on_mid[time][closest_price] = last_size
-
-            else:
-                # New element creation with time, price and size
-                # Create value dictionary with size
-                value_dict = dict()
+                    self.time_accumulator_on_ask[time][closest_price] = 0
+        else:
+            # New element creation with time, price and size
+            # Create value dictionary with size
+            value_dict = dict()
+            if closest_price == ask_price:
                 value_dict[closest_price] = last_size
-                # Create time dictionary with value
-                self.time_accumulator_on_mid[time] = value_dict
+            else:
+                value_dict[closest_price] = 0
+
+            # Create time dictionary with value
+            self.time_accumulator_on_ask[time] = value_dict
 
         # Call function to generate table
-        # print(chr(27) + "[2J")
-        # print(self.time_accumulator_on_bid)
+        print(chr(27) + "[2J")
         print(self.data_table_generator(closest_price, bid_price, ask_price) + '\n')
 
     def data_table_generator(self, current_price: float, bid_price: float, ask_price: float):
@@ -137,11 +144,7 @@ class TimeSalesBidAsk:
         """
 
         """
-        
-        
         BID Price
-        
-        
         """
         # Time, select the range of few minutes of data
         bid_lst_time = sorted(self.time_accumulator_on_bid.keys())[-self.last_x_min:]
@@ -160,12 +163,8 @@ class TimeSalesBidAsk:
         # get the colour for each order size
         bid_colour_dictionary = self.get_colour_by_bid(bid_sizes)
 
-        """
-        
-        
+        """        
         ASK Price
-        
-        
         """
         # Time, select the range of few minutes of data
         ask_lst_time = sorted(self.time_accumulator_on_ask.keys())[-self.last_x_min:]
@@ -184,9 +183,6 @@ class TimeSalesBidAsk:
 
         # get the colour for each order size
         ask_colour_dictionary = self.get_colour_by_ask(ask_sizes)
-
-        # Combine the time range
-        common_time = sorted(set(bid_lst_time + ask_lst_time))
 
         # Price histogram generation
         bid_price_size = [self.time_accumulator_on_bid[i] for i in bid_lst_time]
@@ -209,38 +205,101 @@ class TimeSalesBidAsk:
                     ask_price_size_agg[p] = ps[p]
 
         # Balance the price range
-        # price_index = lst_price.index(current_price)
-        # min_range = 0 if price_index - 20 < 0 else price_index - 20
-        # max_range = price_index + 20
-        # lst_price = lst_price[min_range:max_range]
+        bid_index = None
+        ask_index = None
+        current_index = None
+        lst_price = bid_lst_price
+
+        try:
+            bid_index = bid_lst_price.index(bid_price)
+            ask_index = ask_lst_price.index(ask_price)
+            current_index = bid_lst_price.index(current_price)
+            min_range = 0 if bid_index - 20 < 0 else bid_index - 20
+            max_range = ask_index + 20
+            lst_price = lst_price[min_range:max_range]
+        except ValueError as e:
+            """
+            It's perfectly fine pass this exception. Because we may have cases like below
+            1. Currenly we read only the last price after the completion. Therefore we may not able to find,
+                1. Ask price on current price list. which may not be executed so far
+                2. Bid price on current price list. which may not be executed so far
+            
+            So we don't need to track if thouse prices are out of rance
+            """
+            pass
 
         # New filtered price by range
-        bid_price_hist_agg = [round(bid_price_size_agg[i] / 1000) * '*' for i in bid_lst_price]
-        ask_price_hist_agg = [round(ask_price_size_agg[i] / 1000) * '*' for i in ask_lst_price]
+        bid_price_hist_agg = [round(bid_price_size_agg[i] / 1000) * '+' for i in lst_price]
+        ask_price_hist_agg = [round(ask_price_size_agg[i] / 1000) * '|' for i in lst_price]
 
+        """
+        Used the bid time and price. Since both will be consistent in bid and ask dictionaries. Handled in dictionary
+        generation
+        """
         table_data = []
         for ele_time in bid_lst_time:
             value_data = []
-            for ele_price in bid_lst_price:
-                if ele_price in self.time_accumulator_on_bid[ele_time]:
+            for ele_price in lst_price:
+                # Price from both bid and ask
+                if ele_price in self.time_accumulator_on_bid[ele_time] and \
+                        ele_price in self.time_accumulator_on_ask[ele_time]:
+                    bid_size = self.time_accumulator_on_bid[ele_time][ele_price]
+                    ask_size = self.time_accumulator_on_ask[ele_time][ele_price]
+                    value_data.append(
+                        color(bid_size, fore=bid_colour_dictionary[bid_size], back=(0, 0, 0)) +
+                        ' ➜ ' +
+                        color(ask_size, fore=ask_colour_dictionary[ask_size], back=(0, 0, 0)))
+
+                # Price exist in BID but Not in ASK
+                elif ele_price in self.time_accumulator_on_bid[ele_time] and \
+                        ele_price not in self.time_accumulator_on_ask[ele_time]:
                     # Add the volume size
-                    # value_data.append(self.color_size(self.time_accumulator_on_bid[ele_time][ele_price]))
-                    size = self.time_accumulator_on_bid[ele_time][ele_price]
-                    value_data.append(color(size, fore=bid_colour_dictionary[size], back=(0, 0, 0)))
+
+                    bid_size = self.time_accumulator_on_bid[ele_time][ele_price]
+                    value_data.append(
+                        color(bid_size, fore=bid_colour_dictionary[bid_size], back=(0, 0, 0)) +
+                        f' ➜ {"0"}')
+
+                    # value_data.append(self.color_size(self.bid_time_accumulator[ele_time][ele_price], 0))
+                # Price exist in ASK but Not in BID
+                elif ele_price not in self.time_accumulator_on_bid[ele_time] and \
+                        ele_price in self.time_accumulator_on_ask[ele_time]:
+                    # Add the volume size
+                    ask_size = self.time_accumulator_on_ask[ele_time][ele_price]
+                    value_data.append(f'{"0"} ➜ ' +
+                                      color(ask_size, fore=ask_colour_dictionary[ask_size],
+                                            back=(0, 0, 0)))
+                    # value_data.append(self.color_size(0, self.ask_time_accumulator[ele_time][ele_price]))
                 else:
                     value_data.append('')
+
             table_data.append(value_data)
 
         # Add current price pointer
-        # try:
-        #     lst_price[price_index] = Color('{autored}' + '\033[1m' + str(current_price) + '{/autored}')
-        # except IndexError:
-        #     print(price_index, current_price)
-        #     pass
+        lst_price = ['{:0.2f}'.format(i) for i in lst_price]
+
+        # Only show the indicators if they are in valid range
+        # '\033[1m'  add the boldness the text
+        if bid_index:
+            try:
+                lst_price[bid_index] = Color('{autogreen}' + '\033[1m' + str(bid_price) + '{/autogreen}')
+            except IndexError:
+                pass
+        if ask_index:
+            try:
+                lst_price[ask_index] = Color('{autored}' + '\033[1m' + str(ask_price) + '{/autored}')
+            except IndexError:
+                pass
+        if current_index:
+            try:
+                lst_price[current_index] = Color('{autoyellow}' + '\033[1m' + str(ask_price) + '{/autoyellow}')
+            except IndexError:
+                pass
 
         # Add price and time accordingly as header and index
-        table_data.append(bid_lst_price)
+        table_data.append(lst_price)
         table_data.append(bid_price_hist_agg)
+        table_data.append(ask_price_hist_agg)
         table_data = list(map(list, zip(*table_data)))
         table_data.insert(0, bid_lst_time + [''])
 

@@ -103,7 +103,6 @@ class TimeAndSales:
             for ele_price in lst_price:
                 if ele_price in self.time_accumulator[ele_time]:
                     # Add the volume size
-                    # value_data.append(self.color_size(self.time_accumulator[ele_time][ele_price]))
                     size = self.time_accumulator[ele_time][ele_price]
                     value_data.append(color(size, fore=colour_dictionary[size], back=(0, 0, 0)))
                 else:
