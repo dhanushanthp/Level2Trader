@@ -8,7 +8,7 @@ lines = lines[1:]
 time_sale_obj = TimeSalesBidAsk(ticker='AAPL', multiple_of_10sec=12)
 
 for line in lines:
-    time.sleep(0.5)
+    time.sleep(0.1)
     # Select individual price and size by the feed
     line_split = line.split(',')
     tick_time = line_split[0].split(' ')[-1]

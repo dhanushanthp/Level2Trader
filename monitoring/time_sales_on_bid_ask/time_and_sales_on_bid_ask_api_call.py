@@ -70,7 +70,7 @@ class IBapi(EWrapper, EClient):
 
 
 def main():
-    ticker = str(sys.argv[1])
+    ticker = str(sys.argv[1]).upper()
     time_range = int(sys.argv[2])
     app = IBapi(ticker, time_range)
     app.connect(host='127.0.0.1', port=7497, clientId=19889)
