@@ -67,6 +67,7 @@ class TimeAndSales:
             self.time_accumulator[var_time] = value_dict
 
         # Call function to generate table
+        print(chr(27) + "[2J")
         print(self.data_table_generator(var_value) + '\n')
 
     def data_table_generator(self, current_price):
@@ -99,9 +100,9 @@ class TimeAndSales:
             table_data.append(value_data)
 
         # Add current price pointer
-        lst_price[price_index] = f'> {current_price}'
+        lst_price[price_index] = Color('{autored}' + '\033[1m' + str(current_price) + '{/autored}')
         # Add leading space
-        lst_price = [str(i).rjust(len(str(current_price)) + 2) for i in lst_price]
+        # lst_price = [str(i).rjust(len(str(current_price)) + 2) for i in lst_price]
 
         # Add price and time accordingly as header and index
         table_data.append(lst_price)

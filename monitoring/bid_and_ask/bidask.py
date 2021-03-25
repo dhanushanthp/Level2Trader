@@ -103,6 +103,7 @@ class BidAsk:
             self.ask_time_accumulator[var_time] = value_dict
 
         # Call function to generate table
+        print(chr(27) + "[2J")
         print(self.data_table_generator(bid_price, ask_price) + '\n')
 
     def data_table_generator(self, bid_price: float, ask_price: float):
@@ -120,11 +121,18 @@ class BidAsk:
 
         lst_price = sorted(list(set(bid_lst_price + ask_lst_price)), reverse=True)
         # Balance the price range
-        bid_index = lst_price.index(bid_price)
-        ask_index = lst_price.index(ask_price)
-        min_range = 0 if bid_index - 20 < 0 else bid_index - 20
-        max_range = ask_index + 20
-        lst_price = lst_price[min_range:max_range]
+        bid_index = None
+        ask_index = None
+        try:
+            bid_index = lst_price.index(bid_price)
+            ask_index = lst_price.index(ask_price)
+            min_range = 0 if bid_index - 20 < 0 else bid_index - 20
+            max_range = ask_index + 20
+            lst_price = lst_price[min_range:max_range]
+        except ValueError:
+            print(bid_price)
+            print(ask_price)
+            print(lst_price)
 
         table_data = []
         for ele_time in lst_time:
@@ -152,10 +160,9 @@ class BidAsk:
 
         # Add current price pointer
         lst_price = ['{:0.2f}'.format(i) for i in lst_price]
-        lst_price[bid_index] = f'- {bid_price}'
-        lst_price[ask_index] = f'+ {ask_price}'
-        # Add leading space
-        lst_price = [str(i).rjust(len(str(bid_price)) + 2) for i in lst_price]
+        # '\033[1m'  add the boldness the text
+        lst_price[bid_index] = Color('{autogreen}' + '\033[1m' + str(bid_price) + '{/autogreen}')
+        lst_price[ask_index] = Color('{autored}' + '\033[1m' + str(ask_price) + '{/autored}')
 
         table_data.append(lst_price)
         table_data = list(map(list, zip(*table_data)))
