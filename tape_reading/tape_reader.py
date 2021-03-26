@@ -5,6 +5,7 @@ import numpy as np
 from colr import color
 from util import price_util
 from config import Config
+import os
 
 
 class TapeReader:
@@ -17,6 +18,8 @@ class TapeReader:
         self.dict_bid_size_on_bid = dict()
         # Price and size w.r.t ASK only
         self.dict_ask_size_on_ask = dict()
+        self.clear = lambda: os.system('clear')
+        self.counter = 0
 
         self.ticker = ticker
         # white,white, yellow,yellow,green
@@ -58,7 +61,7 @@ class TapeReader:
     def get_colour_by_ask(self, sizes: list) -> dict:
         """
         Generate color shades w.r.t range of size
-        :param sizes: listed trade size w.r.t ask price on time ans sales
+        :param sizes: listed tratde size w.r.t ask price on time ans sales
         :return: dictionary of colors [key: size, value: color]
         """
         colour_mapping = dict()
@@ -86,49 +89,44 @@ class TapeReader:
 
         # Adjust for 10 sec
         tick_time = tick_time
-        # Find the closest price w.r.t to last price
+        # Find the closest price w.r.t to last price on bid or ask
         closest_price = self.find_closest(bid_price, ask_price, last_price)
 
         """
-        time accumulator dictionary is a dictionary of dictionary data structure. 
-        Dictionary: Key: Time, value: Dictionary(key: price, value: size)
-        The value will be updated through the iteration process by finding time and price accordingly
+        Time accumulator dictionary is a dictionary of dictionary data structure. 
+        Dictionary: {Key: Time, value: Dictionary(key: price, value: size)}
+        The size will be updated through the iteration process by finding time and price accordingly
         """
 
         """
-        Create dummy entry for time and prices to maintains the keys across bid and ask dictionary
+        Last size w.r.t BID price
+        Find the closest price for last price. If the closes price match to bid price. Then the transaction considered as "Trade on BID"
         """
-        # Last size w.r.t BID price
         if tick_time in self.dict_last_size_on_bid:
             # If time already exist in dictionary
             if closest_price in self.dict_last_size_on_bid[tick_time]:
                 if closest_price == bid_price:
-                    # Get the value dictionary by time and price and update the size
+                    '''
+                    Get the value dictionary by time and price and update the size. If the price don't match to bid price. Then it will be caught in
+                    ask price
+                    '''
                     self.dict_last_size_on_bid[tick_time][closest_price] = self.dict_last_size_on_bid[tick_time][closest_price] + last_size
-                else:
-                    # Get the value dictionary by time and price and update the size
-                    self.dict_last_size_on_bid[tick_time][closest_price] = self.dict_last_size_on_bid[tick_time][closest_price] + 0
             else:
                 if closest_price == bid_price:
                     # Time exist but the price is not exist, create a element with price and size
                     self.dict_last_size_on_bid[tick_time][closest_price] = last_size
-                else:
-                    # Time exist but the price is not exist, create a element with price and size
-                    self.dict_last_size_on_bid[tick_time][closest_price] = 0
         else:
             # New element creation with time, price and size
             # Create value dictionary with size
             value_dict = dict()
             if closest_price == bid_price:
                 value_dict[closest_price] = last_size
-            else:
-                value_dict[closest_price] = 0
 
             # Create time dictionary with value
             self.dict_last_size_on_bid[tick_time] = value_dict
 
-        # BID size w.r.t BID price
         """
+        BID size w.r.t BID price
         Collect bid price regardless of last price.
         """
         if tick_time in self.dict_bid_size_on_bid:
@@ -145,37 +143,32 @@ class TapeReader:
             # Create time dictionary with value
             self.dict_bid_size_on_bid[tick_time] = value_dict
 
-        # Last size w.r.t ASK
+        """
+        Last size w.r.t ASK price
+        Find the closest price for last price. If the closes price match to ask price. Then the transaction considered as "Trade on ASK"
+        """
         if tick_time in self.dict_last_size_on_ask:
             # If time already exist in dictionary
             if closest_price in self.dict_last_size_on_ask[tick_time]:
                 if closest_price == ask_price:
                     # Get the value dictionary by time and price and update the size
                     self.dict_last_size_on_ask[tick_time][closest_price] = self.dict_last_size_on_ask[tick_time][closest_price] + last_size
-                else:
-                    # Get the value dictionary by time and price and update the size
-                    self.dict_last_size_on_ask[tick_time][closest_price] = self.dict_last_size_on_ask[tick_time][closest_price] + 0
             else:
                 if closest_price == ask_price:
                     # Time exist but the price is not exist, create a element with price and size
                     self.dict_last_size_on_ask[tick_time][closest_price] = last_size
-                else:
-                    # Time exist but the price is not exist, create a element with price and size
-                    self.dict_last_size_on_ask[tick_time][closest_price] = 0
         else:
             # New element creation with time, price and size
             # Create value dictionary with size
             value_dict = dict()
             if closest_price == ask_price:
                 value_dict[closest_price] = last_size
-            else:
-                value_dict[closest_price] = 0
 
             # Create time dictionary with value
             self.dict_last_size_on_ask[tick_time] = value_dict
 
-        # ASK size w.r.t ASK
         """
+        ASK size w.r.t ASK
         Collect ask price regardless of last price.
         """
         if tick_time in self.dict_ask_size_on_ask:
@@ -190,7 +183,9 @@ class TapeReader:
             # Create time dictionary with value
             self.dict_ask_size_on_ask[tick_time] = value_dict
 
-        # Create dummy bid price tag with 0 size. When the execution on ask
+        """
+        Create dummy bid price tag with 0 size.
+        """
         if bid_price not in self.dict_last_size_on_bid[tick_time]:
             self.dict_last_size_on_bid[tick_time][bid_price] = 0
 
@@ -203,25 +198,34 @@ class TapeReader:
         if ask_price not in self.dict_last_size_on_ask[tick_time]:
             self.dict_last_size_on_ask[tick_time][ask_price] = 0
 
+        # print(chr(27) + "[2J")
         # Call function to generate table
-        print(chr(27) + "[2J")
-        print(self.data_table_generator(closest_price, bid_price, ask_price) + '\n')
+        self.counter = self.counter + 1
+        if self.counter == 100:
+            # Clear each 2 min
+            self.clear()
+            self.counter = 0
 
-    def data_table_generator(self, current_price: float, bid_price: float, ask_price: float):
+        print(self.data_table_generator(closest_price, bid_price, ask_price) + '\n\n\n\n')
+
+    def data_table_generator(self, closest_price: float, bid_price: float, ask_price: float):
         """
-        Visualize the table
-        :return: table data
+        Generate table for terminal input
+        :param closest_price: The price closest to bid or ask w.r.t last price. Which may not be an actual last price
+        :param bid_price: bid price, level II first tier only
+        :param ask_price: ask price, level II first tier only
+        :return: table for terminal visualisation
         """
 
-        # Limit the time
+        # Limit the time,take bid as reference because the time across dictionary will be same. That how the data aggregation has been done
         time_limit = sorted(self.dict_last_size_on_bid.keys())[-self.time_ticks_filter:]
 
         """
-        BID Price
+        Price and Size w.r.t BID
         """
         # Time, select the range of few minutes of data
         # reversed price. Low to High
-        bid_lst_price = sorted(
+        last_bid_prices = sorted(
             list((set(itertools.chain.from_iterable([list(self.dict_last_size_on_bid[i].keys()) for i in time_limit])))), reverse=True)
 
         # Pick the sizes which are visible in the time frame
@@ -238,14 +242,14 @@ class TapeReader:
 
         # BID on BID
         # Time, select the range of few minutes of data
-        bid_bid_lst_time = sorted(self.dict_bid_size_on_bid.keys())[-self.time_ticks_filter:]
+        bid_bid_times = sorted(self.dict_bid_size_on_bid.keys())[-self.time_ticks_filter:]
 
         # reversed price. Low to High
         bid_bid_lst_price = sorted(
-            list((set(itertools.chain.from_iterable([list(self.dict_bid_size_on_bid[i].keys()) for i in bid_bid_lst_time])))), reverse=True)
+            list((set(itertools.chain.from_iterable([list(self.dict_bid_size_on_bid[i].keys()) for i in bid_bid_times])))), reverse=True)
 
         """        
-        ASK Price
+        Price and Size w.r.t ASK
         """
         # Time, select the range of few minutes of data
         # reversed price. Low to High
@@ -298,16 +302,16 @@ class TapeReader:
         bid_index = None
         ask_index = None
         current_index = None
-        lst_price = sorted(set(bid_lst_price + bid_bid_lst_price + ask_ask_lst_price), reverse=True)
+        lst_price = sorted(set(last_bid_prices + ask_lst_price + bid_bid_lst_price + ask_ask_lst_price), reverse=True)
 
         try:
             bid_index = lst_price.index(bid_price)
             ask_index = lst_price.index(ask_price)
-            current_index = lst_price.index(current_price)
+            current_index = lst_price.index(closest_price)
             # Add the range of moment for the table
             min_range = 0 if bid_index - self.config.get_timesales_price_range() < 0 else bid_index - self.config.get_timesales_price_range()
             max_range = ask_index + self.config.get_timesales_price_range()
-            lst_price = lst_price[min_range:max_range]
+            # lst_price = lst_price[min_range:max_range]
         except ValueError as e:
             """
             It's perfectly fine pass this exception. Because we may have cases like below
@@ -440,7 +444,7 @@ class TapeReader:
                 pass
         if current_index:
             try:
-                lst_price[current_index] = Color('{autoyellow}' + '\033[1m' + str(current_price) + '{/autoyellow}')
+                lst_price[current_index] = Color('{autoyellow}' + '\033[1m' + str(closest_price) + '{/autoyellow}')
             except IndexError:
                 pass
 
