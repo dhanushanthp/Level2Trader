@@ -65,7 +65,7 @@ class TimeSalesBidAsk:
         """
 
         # Adjust for 10 sec
-        time = time[:-1]
+        time = time
         # Find the closest price w.r.t to last price
         closest_price = self.find_closest(bid_price, ask_price, last_price)
 
@@ -291,22 +291,44 @@ class TimeSalesBidAsk:
         for ele_time in bid_lst_time:
             value_data = []
             for ele_price in lst_price:
-                # PriceUtil from both bid and ask
+                # Price both bid and ask
                 if ele_price in self.dict_last_size_on_bid[ele_time] and \
                         ele_price in self.dict_last_size_on_ask[ele_time]:
+
+                    # Select sizes for each price and time
                     last_bid_size = self.dict_last_size_on_bid[ele_time][ele_price]
                     last_ask_size = self.dict_last_size_on_ask[ele_time][ele_price]
                     bid_bid_size = self.dict_bid_size_on_bid[ele_time][ele_price]
                     ask_ask_size = self.dict_ask_size_on_ask[ele_time][ele_price]
-                    value_data.append(
-                        color(self.pu.slot_convertor(last_bid_size), fore=last_bid_colour_dictionary[last_bid_size], back=(0, 0, 0)) +
-                        '/' +
-                        color(self.pu.slot_convertor(bid_bid_size), fore=bid_bid_colour_dictionary[bid_bid_size], back=(0, 0, 0)) +
-                        ' ➜ ' +
-                        color(self.pu.slot_convertor(last_ask_size), fore=last_ask_colour_dictionary[last_ask_size], back=(0, 0, 0)) +
-                        '/' +
-                        color(self.pu.slot_convertor(ask_ask_size), fore=ask_ask_colour_dictionary[ask_ask_size], back=(0, 0, 0))
-                    )
+
+                    # Define colors so we can change dynamically based on conditions
+                    clr_front_last_bid = last_bid_colour_dictionary[last_bid_size]
+                    clr_front_bid_bid = bid_bid_colour_dictionary[bid_bid_size]
+                    clr_front_last_ask = last_ask_colour_dictionary[last_ask_size]
+                    clr_front_ask_ask = ask_ask_colour_dictionary[ask_ask_size]
+
+                    clr_back_bid = (0, 0, 0)
+                    clr_back_ask = (0, 0, 0)
+
+                    # Hidden Buyer, Logic: Transaction on BID in T&S is higher than the BID on level II
+                    if last_bid_size > bid_bid_size:
+                        clr_back_bid = (0, 100, 0)
+
+                    # Hidden Seller, Logic: Transaction on ASK in T&S is higher than the ASK on level II
+                    if last_ask_size > ask_ask_size:
+                        clr_back_ask = (139, 0, 0)
+
+                    normal_transaction = '[' + \
+                                         color(self.pu.slot_convertor(last_bid_size), fore=clr_front_last_bid, back=clr_back_bid) + \
+                                         color('/', fore=(255, 255, 255), back=clr_back_bid) + \
+                                         color(self.pu.slot_convertor(bid_bid_size), fore=clr_front_bid_bid, back=clr_back_bid) + \
+                                         ' ➜ ' + \
+                                         color(self.pu.slot_convertor(last_ask_size), fore=clr_front_last_ask, back=clr_back_ask) + \
+                                         color('/', fore=(255, 255, 255), back=clr_back_ask) + \
+                                         color(self.pu.slot_convertor(ask_ask_size), fore=clr_front_ask_ask, back=clr_back_ask) + \
+                                         ']'
+
+                    value_data.append(normal_transaction)
 
                 # Price exist in BID but Not in ASK
                 elif ele_price in self.dict_last_size_on_bid[ele_time] and ele_price not in self.dict_last_size_on_ask[ele_time]:
@@ -314,10 +336,21 @@ class TimeSalesBidAsk:
                     # Add the volume size
                     last_bid_size = self.dict_last_size_on_bid[ele_time][ele_price]
                     bid_bid_size = self.dict_bid_size_on_bid[ele_time][ele_price]
+
+                    # Define colors so we can change dynamically based on conditions
+                    clr_front_last_bid = last_bid_colour_dictionary[last_bid_size]
+                    clr_front_bid_bid = bid_bid_colour_dictionary[bid_bid_size]
+
+                    clr_back_bid = (0, 0, 0)
+
+                    # Hidden Buyer, Logic: Transaction on BID in T&S is higher than the BID on level II
+                    if last_bid_size > bid_bid_size:
+                        clr_back_bid = (0, 100, 0)
+
                     value_data.append(
-                        color(self.pu.slot_convertor(last_bid_size), fore=last_bid_colour_dictionary[last_bid_size], back=(0, 0, 0)) +
-                        '/' +
-                        color(self.pu.slot_convertor(bid_bid_size), fore=bid_bid_colour_dictionary[bid_bid_size], back=(0, 0, 0))
+                        color(self.pu.slot_convertor(last_bid_size), fore=clr_front_last_bid, back=clr_back_bid) +
+                        color('/', fore=(255, 255, 255), back=clr_back_bid) +
+                        color(self.pu.slot_convertor(bid_bid_size), fore=clr_front_bid_bid, back=clr_back_bid)
                         + f' ➜ {"0"}')
 
                 # Price exist in ASK but Not in BID
@@ -325,11 +358,20 @@ class TimeSalesBidAsk:
                     # Add the volume size
                     last_ask_size = self.dict_last_size_on_ask[ele_time][ele_price]
                     ask_ask_size = self.dict_ask_size_on_ask[ele_time][ele_price]
+
+                    clr_front_last_ask = last_ask_colour_dictionary[last_ask_size]
+                    clr_front_ask_ask = ask_ask_colour_dictionary[ask_ask_size]
+
+                    clr_back_ask = (0, 0, 0)
+
+                    if last_ask_size > ask_ask_size:
+                        clr_back_ask = (139, 0, 0)
+
                     value_data.append(
                         f'{"0"} ➜ '
-                        + color(self.pu.slot_convertor(last_ask_size), fore=last_ask_colour_dictionary[last_ask_size], back=(0, 0, 0)) +
-                        '/' +
-                        color(self.pu.slot_convertor(ask_ask_size), fore=ask_ask_colour_dictionary[ask_ask_size], back=(0, 0, 0)))
+                        + color(self.pu.slot_convertor(last_ask_size), fore=clr_front_last_ask, back=clr_back_ask) +
+                        color('/', fore=(255, 255, 255), back=clr_back_ask) +
+                        color(self.pu.slot_convertor(ask_ask_size), fore=clr_front_ask_ask, back=clr_back_ask))
                 else:
                     value_data.append('')
 
