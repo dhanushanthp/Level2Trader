@@ -32,3 +32,10 @@ class Config:
         :return:
         """
         return self.config.getint('PRICE', 'hist_blk_size')
+
+    def get_timesales_timeticks(self):
+        """
+        Limit the time ticks the last x period
+        :return:
+        """
+        return self.config.getint('TIME_SALES', 'max_time_ticks')

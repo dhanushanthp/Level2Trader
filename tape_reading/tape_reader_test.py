@@ -1,14 +1,14 @@
-from monitoring.time_sales_on_bid_ask.time_and_sales_on_bid_ask import TimeSalesBidAsk
+from tape_reading.tape_reader import TapeReader
 import time
 
 file1 = open('test_data/bid_ask_last.csv', 'r')
 lines = file1.readlines()
 lines = lines[1:]
 
-time_sale_obj = TimeSalesBidAsk(ticker='AAPL', multiple_of_10sec=12)
+time_sale_obj = TapeReader(ticker='TESTING')
 
 for line in lines:
-    time.sleep(5)
+    time.sleep(1)
     # Select individual price and size by the feed
     line_split = line.split(',')
     tick_time = line_split[0].split(' ')[-1]

@@ -7,65 +7,85 @@ from util import price_util
 from config import Config
 
 
-class TimeSalesBidAsk:
-    def __init__(self, ticker, multiple_of_10sec=6):
+class TapeReader:
+    def __init__(self, ticker):
+        # Price and size w.r.t BID and last
         self.dict_last_size_on_bid = dict()
+        # Price and size w.r.t ASK and last
         self.dict_last_size_on_ask = dict()
+        # Price and size w.r.t BID only
         self.dict_bid_size_on_bid = dict()
+        # Price and size w.r.t ASK only
         self.dict_ask_size_on_ask = dict()
-        self.time_accumulator_on_mid = dict()
-        self.last_x_min = multiple_of_10sec
+
         self.ticker = ticker
         # white,white, yellow,yellow,green
         self.colors_bid = [(255, 255, 255), (255, 255, 255), (255, 255, 0), (255, 255, 0), (0, 255, 0)]
         # white,white, yellow,yellow,red
         self.colors_ask = [(255, 255, 255), (255, 255, 255), (255, 255, 0), (255, 255, 0), (255, 0, 0)]
+
         self.pu = price_util.PriceUtil()
         self.config = Config()
+        self.time_ticks_filter = self.config.get_timesales_timeticks()
 
     @staticmethod
-    def find_closest(bid, ask, last):
+    def find_closest(bid: float, ask: float, last: float) -> float:
         """
-        Find the cloesst value to the bid and ask compare to last value
-        :param bid:
-        :param ask:
-        :param last:
-        :return:
+        Find the closest value to the bid and ask compare to last value
+        :param bid: bid price, level II first tier only
+        :param ask: ask price, level II first tier only
+        :param last: last price, Time & Sales
+        :return: Closest possible to bid or ask
         """
         return min([bid, ask], key=lambda x: abs(x - last))
 
     def get_colour_by_bid(self, sizes: list) -> dict:
+        """
+        Generate color shades w.r.t range of size
+        :param sizes: listed trade size w.r.t bid price on time ans sales
+        :return: dictionary of colors [key: size, value: color]
+        """
         colour_mapping = dict()
         values = np.array_split(np.array(sizes), len(self.colors_bid))
         for i, val_lst in enumerate(values):
             for size in val_lst:
                 colour_mapping[size] = self.colors_bid[i]
+        # Create colour for size 0
+        colour_mapping[0] = self.colors_bid[0]
+
         return colour_mapping
 
     def get_colour_by_ask(self, sizes: list) -> dict:
+        """
+        Generate color shades w.r.t range of size
+        :param sizes: listed trade size w.r.t ask price on time ans sales
+        :return: dictionary of colors [key: size, value: color]
+        """
         colour_mapping = dict()
         values = np.array_split(np.array(sizes), len(self.colors_ask))
         for i, val_lst in enumerate(values):
             for size in val_lst:
                 colour_mapping[size] = self.colors_ask[i]
+        # Create colour for size 0
+        colour_mapping[0] = self.colors_ask[0]
         return colour_mapping
 
-    def data_generator(self, time, bid_price, bid_size, ask_price, ask_size, last_price, last_size):
+    def data_generator(self, tick_time: str, bid_price, bid_size, ask_price, ask_size, last_price, last_size):
         """
         1. Aggregate the size of trades w.r.t to bid price, ask price and last price.
-        2. Tag last price w.r.t bid and ask values by finding most possilbe or closest prices
-        :param time:
-        :param bid_price:
-        :param bid_size:
-        :param ask_price:
-        :param ask_size:
-        :param last_price:
-        :param last_size:
+        2. Tag last price w.r.t bid and ask values by finding most possible or closest prices
+        :param tick_time: Time of ticker
+        :param bid_price: bid price, level II first tier only
+        :param bid_size: bid size, level II first tier only
+        :param ask_price: ask price, level II first tier only
+        :param ask_size: ask size, level II first tier only
+        :param last_price: last price, time & sales
+        :param last_size: last size, time & sales
         :return:
         """
 
         # Adjust for 10 sec
-        time = time
+        tick_time = tick_time
         # Find the closest price w.r.t to last price
         closest_price = self.find_closest(bid_price, ask_price, last_price)
 
@@ -79,22 +99,22 @@ class TimeSalesBidAsk:
         Create dummy entry for time and prices to maintains the keys across bid and ask dictionary
         """
         # Last size w.r.t BID price
-        if time in self.dict_last_size_on_bid:
+        if tick_time in self.dict_last_size_on_bid:
             # If time already exist in dictionary
-            if closest_price in self.dict_last_size_on_bid[time]:
+            if closest_price in self.dict_last_size_on_bid[tick_time]:
                 if closest_price == bid_price:
                     # Get the value dictionary by time and price and update the size
-                    self.dict_last_size_on_bid[time][closest_price] = self.dict_last_size_on_bid[time][closest_price] + last_size
+                    self.dict_last_size_on_bid[tick_time][closest_price] = self.dict_last_size_on_bid[tick_time][closest_price] + last_size
                 else:
                     # Get the value dictionary by time and price and update the size
-                    self.dict_last_size_on_bid[time][closest_price] = self.dict_last_size_on_bid[time][closest_price] + 0
+                    self.dict_last_size_on_bid[tick_time][closest_price] = self.dict_last_size_on_bid[tick_time][closest_price] + 0
             else:
                 if closest_price == bid_price:
                     # Time exist but the price is not exist, create a element with price and size
-                    self.dict_last_size_on_bid[time][closest_price] = last_size
+                    self.dict_last_size_on_bid[tick_time][closest_price] = last_size
                 else:
                     # Time exist but the price is not exist, create a element with price and size
-                    self.dict_last_size_on_bid[time][closest_price] = 0
+                    self.dict_last_size_on_bid[tick_time][closest_price] = 0
         else:
             # New element creation with time, price and size
             # Create value dictionary with size
@@ -105,46 +125,43 @@ class TimeSalesBidAsk:
                 value_dict[closest_price] = 0
 
             # Create time dictionary with value
-            self.dict_last_size_on_bid[time] = value_dict
+            self.dict_last_size_on_bid[tick_time] = value_dict
 
         # BID size w.r.t BID price
-        if time in self.dict_bid_size_on_bid:
+        """
+        Collect bid price regardless of last price.
+        """
+        if tick_time in self.dict_bid_size_on_bid:
             # If time already exist in dictionary
-            if closest_price == bid_price:
-                # Time exist but the price is not exist, create a element with price and size
-                self.dict_bid_size_on_bid[time][closest_price] = bid_size
-            else:
-                # Time exist but the price is not exist, create a element with price and size
-                self.dict_bid_size_on_bid[time][closest_price] = 0
+            # Regardless of last price. We will add the bid price.
+            # Time exist but the price is not exist, create a element with price and size
+            self.dict_bid_size_on_bid[tick_time][bid_price] = bid_size
         else:
             # New element creation with time, price and size
             # Create value dictionary with size
             value_dict = dict()
-            if closest_price == bid_price:
-                value_dict[closest_price] = bid_size
-            else:
-                value_dict[closest_price] = 0
+            value_dict[bid_price] = bid_size
 
             # Create time dictionary with value
-            self.dict_bid_size_on_bid[time] = value_dict
+            self.dict_bid_size_on_bid[tick_time] = value_dict
 
         # Last size w.r.t ASK
-        if time in self.dict_last_size_on_ask:
+        if tick_time in self.dict_last_size_on_ask:
             # If time already exist in dictionary
-            if closest_price in self.dict_last_size_on_ask[time]:
+            if closest_price in self.dict_last_size_on_ask[tick_time]:
                 if closest_price == ask_price:
                     # Get the value dictionary by time and price and update the size
-                    self.dict_last_size_on_ask[time][closest_price] = self.dict_last_size_on_ask[time][closest_price] + last_size
+                    self.dict_last_size_on_ask[tick_time][closest_price] = self.dict_last_size_on_ask[tick_time][closest_price] + last_size
                 else:
                     # Get the value dictionary by time and price and update the size
-                    self.dict_last_size_on_ask[time][closest_price] = self.dict_last_size_on_ask[time][closest_price] + 0
+                    self.dict_last_size_on_ask[tick_time][closest_price] = self.dict_last_size_on_ask[tick_time][closest_price] + 0
             else:
                 if closest_price == ask_price:
                     # Time exist but the price is not exist, create a element with price and size
-                    self.dict_last_size_on_ask[time][closest_price] = last_size
+                    self.dict_last_size_on_ask[tick_time][closest_price] = last_size
                 else:
                     # Time exist but the price is not exist, create a element with price and size
-                    self.dict_last_size_on_ask[time][closest_price] = 0
+                    self.dict_last_size_on_ask[tick_time][closest_price] = 0
         else:
             # New element creation with time, price and size
             # Create value dictionary with size
@@ -155,31 +172,39 @@ class TimeSalesBidAsk:
                 value_dict[closest_price] = 0
 
             # Create time dictionary with value
-            self.dict_last_size_on_ask[time] = value_dict
+            self.dict_last_size_on_ask[tick_time] = value_dict
 
         # ASK size w.r.t ASK
-        if time in self.dict_ask_size_on_ask:
+        """
+        Collect ask price regardless of last price.
+        """
+        if tick_time in self.dict_ask_size_on_ask:
             # If time already exist in dictionary
-            if closest_price == ask_price:
-                # Time exist but the price is not exist, create a element with price and size
-                self.dict_ask_size_on_ask[time][closest_price] = ask_size
-            else:
-                # Time exist but the price is not exist, create a element with price and size
-                self.dict_ask_size_on_ask[time][closest_price] = 0
+            self.dict_ask_size_on_ask[tick_time][ask_price] = ask_size
         else:
             # New element creation with time, price and size
             # Create value dictionary with size
             value_dict = dict()
-            if closest_price == ask_price:
-                value_dict[closest_price] = ask_size
-            else:
-                value_dict[closest_price] = 0
+            value_dict[ask_price] = ask_size
 
             # Create time dictionary with value
-            self.dict_ask_size_on_ask[time] = value_dict
+            self.dict_ask_size_on_ask[tick_time] = value_dict
+
+        # Create dummy bid price tag with 0 size. When the execution on ask
+        if bid_price not in self.dict_last_size_on_bid[tick_time]:
+            self.dict_last_size_on_bid[tick_time][bid_price] = 0
+
+        if ask_price not in self.dict_last_size_on_bid[tick_time]:
+            self.dict_last_size_on_bid[tick_time][ask_price] = 0
+
+        if bid_price not in self.dict_last_size_on_ask[tick_time]:
+            self.dict_last_size_on_ask[tick_time][bid_price] = 0
+
+        if ask_price not in self.dict_last_size_on_ask[tick_time]:
+            self.dict_last_size_on_ask[tick_time][ask_price] = 0
 
         # Call function to generate table
-        # print(chr(27) + "[2J")
+        print(chr(27) + "[2J")
         print(self.data_table_generator(closest_price, bid_price, ask_price) + '\n')
 
     def data_table_generator(self, current_price: float, bid_price: float, ask_price: float):
@@ -188,21 +213,22 @@ class TimeSalesBidAsk:
         :return: table data
         """
 
+        # Limit the time
+        time_limit = sorted(self.dict_last_size_on_bid.keys())[-self.time_ticks_filter:]
+
         """
         BID Price
         """
         # Time, select the range of few minutes of data
-        bid_lst_time = sorted(self.dict_last_size_on_bid.keys())[-self.last_x_min:]
-
         # reversed price. Low to High
         bid_lst_price = sorted(
-            list((set(itertools.chain.from_iterable([list(self.dict_last_size_on_bid[i].keys()) for i in bid_lst_time])))), reverse=True)
+            list((set(itertools.chain.from_iterable([list(self.dict_last_size_on_bid[i].keys()) for i in time_limit])))), reverse=True)
 
         # Pick the sizes which are visible in the time frame
-        last_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_last_size_on_bid[i].values() for i in bid_lst_time])))
+        last_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_last_size_on_bid[i].values() for i in time_limit])))
 
         # Pick the sizes which are visible in the time frame
-        bid_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_bid_size_on_bid[i].values() for i in bid_lst_time])))
+        bid_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_bid_size_on_bid[i].values() for i in time_limit])))
 
         # get the colour for each order size
         last_bid_colour_dictionary = self.get_colour_by_bid(last_bid_sizes)
@@ -210,33 +236,47 @@ class TimeSalesBidAsk:
         # get the colour for each order size
         bid_bid_colour_dictionary = self.get_colour_by_bid(bid_bid_sizes)
 
+        # BID on BID
+        # Time, select the range of few minutes of data
+        bid_bid_lst_time = sorted(self.dict_bid_size_on_bid.keys())[-self.time_ticks_filter:]
+
+        # reversed price. Low to High
+        bid_bid_lst_price = sorted(
+            list((set(itertools.chain.from_iterable([list(self.dict_bid_size_on_bid[i].keys()) for i in bid_bid_lst_time])))), reverse=True)
+
         """        
         ASK Price
         """
         # Time, select the range of few minutes of data
-        ask_lst_time = sorted(self.dict_last_size_on_ask.keys())[-self.last_x_min:]
-
         # reversed price. Low to High
         ask_lst_price = sorted(
             list(
                 (set(itertools.chain.from_iterable(
-                    [list(self.dict_last_size_on_ask[i].keys()) for i in ask_lst_time])))),
+                    [list(self.dict_last_size_on_ask[i].keys()) for i in time_limit])))),
             reverse=True)
 
         # Pick the sizes which are visible in the time frame
         # print(self.dict_last_size_on_ask)
         last_ask_sizes = sorted(
-            set(itertools.chain.from_iterable([self.dict_last_size_on_ask[i].values() for i in ask_lst_time])))
+            set(itertools.chain.from_iterable([self.dict_last_size_on_ask[i].values() for i in time_limit])))
         ask_ask_sizes = sorted(
-            set(itertools.chain.from_iterable([self.dict_ask_size_on_ask[i].values() for i in ask_lst_time])))
+            set(itertools.chain.from_iterable([self.dict_ask_size_on_ask[i].values() for i in time_limit])))
 
         # get the colour for each order size
         last_ask_colour_dictionary = self.get_colour_by_ask(last_ask_sizes)
         ask_ask_colour_dictionary = self.get_colour_by_ask(ask_ask_sizes)
 
+        # ASK on ASK
+        # Time, select the range of few minutes of data
+        ask_ask_lst_time = sorted(self.dict_ask_size_on_ask.keys())[-self.time_ticks_filter:]
+
+        # reversed price. Low to High
+        ask_ask_lst_price = sorted(
+            list((set(itertools.chain.from_iterable([list(self.dict_ask_size_on_ask[i].keys()) for i in ask_ask_lst_time])))), reverse=True)
+
         # Price histogram generation
-        bid_price_size = [self.dict_last_size_on_bid[i] for i in bid_lst_time]
-        ask_price_size = [self.dict_last_size_on_ask[i] for i in ask_lst_time]
+        bid_price_size = [self.dict_last_size_on_bid[i] for i in time_limit]
+        ask_price_size = [self.dict_last_size_on_ask[i] for i in time_limit]
 
         bid_price_size_agg = dict()
         for ps in bid_price_size:
@@ -258,12 +298,12 @@ class TimeSalesBidAsk:
         bid_index = None
         ask_index = None
         current_index = None
-        lst_price = bid_lst_price
+        lst_price = sorted(set(bid_lst_price + bid_bid_lst_price + ask_ask_lst_price), reverse=True)
 
         try:
-            bid_index = bid_lst_price.index(bid_price)
-            ask_index = ask_lst_price.index(ask_price)
-            current_index = bid_lst_price.index(current_price)
+            bid_index = lst_price.index(bid_price)
+            ask_index = lst_price.index(ask_price)
+            current_index = lst_price.index(current_price)
             # Add the range of moment for the table
             min_range = 0 if bid_index - self.config.get_timesales_price_range() < 0 else bid_index - self.config.get_timesales_price_range()
             max_range = ask_index + self.config.get_timesales_price_range()
@@ -288,7 +328,7 @@ class TimeSalesBidAsk:
         generation
         """
         table_data = []
-        for ele_time in bid_lst_time:
+        for ele_time in time_limit:
             value_data = []
             for ele_price in lst_price:
                 # Price both bid and ask
@@ -298,8 +338,14 @@ class TimeSalesBidAsk:
                     # Select sizes for each price and time
                     last_bid_size = self.dict_last_size_on_bid[ele_time][ele_price]
                     last_ask_size = self.dict_last_size_on_ask[ele_time][ele_price]
-                    bid_bid_size = self.dict_bid_size_on_bid[ele_time][ele_price]
-                    ask_ask_size = self.dict_ask_size_on_ask[ele_time][ele_price]
+                    try:
+                        bid_bid_size = self.dict_bid_size_on_bid[ele_time][ele_price]
+                    except KeyError:
+                        bid_bid_size = 0
+                    try:
+                        ask_ask_size = self.dict_ask_size_on_ask[ele_time][ele_price]
+                    except KeyError:
+                        ask_ask_size = 0
 
                     # Define colors so we can change dynamically based on conditions
                     clr_front_last_bid = last_bid_colour_dictionary[last_bid_size]
@@ -394,7 +440,7 @@ class TimeSalesBidAsk:
                 pass
         if current_index:
             try:
-                lst_price[current_index] = Color('{autoyellow}' + '\033[1m' + str(ask_price) + '{/autoyellow}')
+                lst_price[current_index] = Color('{autoyellow}' + '\033[1m' + str(current_price) + '{/autoyellow}')
             except IndexError:
                 pass
 
@@ -403,11 +449,10 @@ class TimeSalesBidAsk:
         table_data.append(bid_price_hist_agg)
         table_data.append(ask_price_hist_agg)
         table_data = list(map(list, zip(*table_data)))
-        table_data.insert(0, bid_lst_time + ['price', 'bid', 'ask'])
+        table_data.insert(0, time_limit + ['price', 'bid', 'ask'])
 
         # Create table instance
         table_instance = AsciiTable(table_data, f'****  {self.ticker}  ****')
-        # table_instance = SingleTable(table_data, f'****  {self.ticker}  ****')
         table_instance.inner_heading_row_border = False
         table_instance.inner_row_border = True
         table_instance.inner_column_border = False

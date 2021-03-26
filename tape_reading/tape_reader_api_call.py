@@ -4,13 +4,13 @@ from ibapi.contract import Contract
 from ibapi.client import TickAttribLast, TickerId, TickAttribBidAsk
 import sys
 import datetime
-from time_sales_on_bid_ask_cut.time_and_sales_on_bid_ask_cut import TimeSalesBidAsk
+from tape_reading.tape_reader import TapeReader
 
 
 class IBapi(EWrapper, EClient):
-    def __init__(self, ticker, time_range=6):
+    def __init__(self, ticker):
         EClient.__init__(self, self)
-        self.time_and_sales = TimeSalesBidAsk(ticker=ticker, multiple_of_10sec=time_range)
+        self.time_and_sales = TapeReader(ticker=ticker)
         self.data = []  # Initialize variable to store candle
         self.bid = None
         self.ask = None
@@ -20,8 +20,7 @@ class IBapi(EWrapper, EClient):
     def error(self, reqId: TickerId, errorCode: int, errorString: str):
         print(f"{reqId}, {errorCode}, {errorString}")
 
-    def tickByTickAllLast(self, reqId: int, tickType: int, ticktime: int, price: float, size: int,
-                          tickAtrribLast: TickAttribLast, exchange: str,
+    def tickByTickAllLast(self, reqId: int, tickType: int, ticktime: int, price: float, size: int, tickAtrribLast: TickAttribLast, exchange: str,
                           specialConditions: str):
         """
         Load the ticker All last Data
@@ -40,11 +39,11 @@ class IBapi(EWrapper, EClient):
         if tickType == 1:
             # Once the level II is available
             if self.bid:
-                self.time_and_sales.data_generator(datetime.datetime.fromtimestamp(ticktime).strftime("%H:%M:%S"),
-                                                   self.bid, self.bid_size, self.ask, self.ask_size, price, size)
+                self.time_and_sales.data_generator(datetime.datetime.fromtimestamp(ticktime).strftime("%H:%M:%S"), self.bid, self.bid_size, self.ask,
+                                                   self.ask_size, price, size)
 
-    def tickByTickBidAsk(self, reqId: int, time: int, bidPrice: float, askPrice: float,
-                         bidSize: int, askSize: int, tickAttribBidAsk: TickAttribBidAsk):
+    def tickByTickBidAsk(self, reqId: int, time: int, bidPrice: float, askPrice: float, bidSize: int, askSize: int,
+                         tickAttribBidAsk: TickAttribBidAsk):
         """
         Update the bid and ask price when ever the function triggered
         :param reqId:
@@ -70,9 +69,8 @@ class IBapi(EWrapper, EClient):
 
 def main():
     ticker = str(sys.argv[1]).upper()
-    time_range = int(sys.argv[2])
-    app = IBapi(ticker, time_range)
-    app.connect(host='127.0.0.1', port=7497, clientId=19889)
+    app = IBapi(ticker)
+    app.connect(host='127.0.0.1', port=7497, clientId=19879)
 
     # Create contract object
     contract = Contract()
@@ -83,16 +81,15 @@ def main():
     contract.primaryExchange = 'NASDAQ'
 
     # Request historical candles
-    app.reqTickByTickData(reqId=1008, contract=contract, tickType="BidAsk", numberOfTicks=0,
-                          ignoreSize=True)
+    app.reqTickByTickData(reqId=1008, contract=contract, tickType="BidAsk", numberOfTicks=0, ignoreSize=True)
 
     # Request historical candles
-    app.reqTickByTickData(reqId=1009, contract=contract, tickType="Last", numberOfTicks=0,
-                          ignoreSize=True)
-
+    app.reqTickByTickData(reqId=1009, contract=contract, tickType="Last", numberOfTicks=0, ignoreSize=True)
+    # app.disconnect()
+    # app.cancelTickByTickData(1008)
     app.run()
-    # app.cancelTickByTickData(1)
-    app.disconnect()
+
+
 
 
 main()
