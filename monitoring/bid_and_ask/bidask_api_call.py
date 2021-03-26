@@ -3,7 +3,7 @@ from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
 from ibapi.client import TickerId, TickAttribBidAsk
 import sys
-from bidask import BidAsk
+from monitoring.bid_and_ask.bidask import BidAsk
 import datetime
 from numpy import random
 
@@ -17,8 +17,8 @@ class IBapi(EWrapper, EClient):
     def error(self, reqId: TickerId, errorCode: int, errorString: str):
         print(f"{reqId}, {errorCode}, {errorString}")
 
-    def tickByTickBidAsk(self, reqId: int, time: int, bidPrice: float, askPrice: float,
-                         bidSize: int, askSize: int, tickAttribBidAsk: TickAttribBidAsk):
+    def tickByTickBidAsk(self, reqId: int, time: int, bidPrice: float, askPrice: float, bidSize: int, askSize: int,
+                         tickAttribBidAsk: TickAttribBidAsk):
         """
 
         :param reqId:
@@ -35,8 +35,7 @@ class IBapi(EWrapper, EClient):
 
                                  askSize, tickAttribBidAsk)
 
-        self.time_and_sales.data_generator(datetime.datetime.fromtimestamp(time).strftime("%H:%M:%S"), bidPrice,
-                                           bidSize, askPrice, askSize)
+        self.time_and_sales.data_generator(datetime.datetime.fromtimestamp(time).strftime("%H:%M:%S"), bidPrice, bidSize, askPrice, askSize)
 
 
 def main():
@@ -53,8 +52,7 @@ def main():
     contract.primaryExchange = 'NASDAQ'
 
     # Request historical candles
-    app.reqTickByTickData(reqId=random.randint(1000), contract=contract, tickType="BidAsk", numberOfTicks=0,
-                          ignoreSize=True)
+    app.reqTickByTickData(reqId=random.randint(1000), contract=contract, tickType="BidAsk", numberOfTicks=0, ignoreSize=True)
 
     app.run()
     # app.cancelTickByTickData(1)

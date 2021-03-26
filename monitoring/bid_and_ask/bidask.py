@@ -1,9 +1,10 @@
 import itertools
 from terminaltables import AsciiTable
 from colorclass import Color
-from terminaltables import SingleTable
 import numpy as np
 from colr import color
+from util import price_util
+from config import Config
 
 
 class BidAsk:
@@ -17,6 +18,8 @@ class BidAsk:
         self.colors_bid = [(255, 255, 255), (255, 255, 255), (255, 255, 0), (255, 255, 0), (0, 255, 0)]
         # white,white, yellow,yellow,red
         self.colors_ask = [(255, 255, 255), (255, 255, 255), (255, 255, 0), (255, 255, 0), (255, 0, 0)]
+        self.pu = price_util.PriceUtil()
+        self.config = Config()
 
     def get_colour_by_bid(self, sizes: list) -> dict:
         colour_mapping = dict()
@@ -67,8 +70,7 @@ class BidAsk:
         if var_time in self.bid_time_accumulator:
             if bid_price in self.bid_time_accumulator[var_time]:
                 # Get the value dictionary and update the size
-                self.bid_time_accumulator[var_time][bid_price] = self.bid_time_accumulator[var_time][
-                                                                     bid_price] + bid_size
+                self.bid_time_accumulator[var_time][bid_price] = self.bid_time_accumulator[var_time][bid_price] + bid_size
             else:
                 self.bid_time_accumulator[var_time][bid_price] = bid_size
         else:
@@ -82,8 +84,7 @@ class BidAsk:
         if var_time in self.ask_time_accumulator:
             if ask_price in self.ask_time_accumulator[var_time]:
                 # Get the value dictionary and update the size
-                self.ask_time_accumulator[var_time][ask_price] = self.ask_time_accumulator[var_time][
-                                                                     ask_price] + ask_size
+                self.ask_time_accumulator[var_time][ask_price] = self.ask_time_accumulator[var_time][ask_price] + ask_size
             else:
                 self.ask_time_accumulator[var_time][ask_price] = ask_size
         else:
@@ -105,17 +106,13 @@ class BidAsk:
         # Time
         lst_time = sorted(self.bid_time_accumulator.keys())[-self.last_x_min:]
         # value
-        bid_lst_price = sorted(
-            list((set(itertools.chain.from_iterable([list(self.bid_time_accumulator[i].keys()) for i in lst_time])))))
-        ask_lst_price = sorted(
-            list((set(itertools.chain.from_iterable([list(self.ask_time_accumulator[i].keys()) for i in lst_time])))))
+        bid_lst_price = sorted(list((set(itertools.chain.from_iterable([list(self.bid_time_accumulator[i].keys()) for i in lst_time])))))
+        ask_lst_price = sorted(list((set(itertools.chain.from_iterable([list(self.ask_time_accumulator[i].keys()) for i in lst_time])))))
 
         # Pick the sizes which are visible in the time frame
-        bid_sizes = sorted(
-            set(itertools.chain.from_iterable([self.bid_time_accumulator[i].values() for i in lst_time])))
+        bid_sizes = sorted(set(itertools.chain.from_iterable([self.bid_time_accumulator[i].values() for i in lst_time])))
         # Pick the sizes which are visible in the time frame
-        ask_sizes = sorted(
-            set(itertools.chain.from_iterable([self.ask_time_accumulator[i].values() for i in lst_time])))
+        ask_sizes = sorted(set(itertools.chain.from_iterable([self.ask_time_accumulator[i].values() for i in lst_time])))
 
         # Creation of color dictionary
         bid_colour_dictionary = self.get_colour_by_bid(bid_sizes)
@@ -128,51 +125,51 @@ class BidAsk:
         try:
             bid_index = lst_price.index(bid_price)
             ask_index = lst_price.index(ask_price)
-            min_range = 0 if bid_index - 20 < 0 else bid_index - 20
-            max_range = ask_index + 20
+            min_range = 0 if bid_index - self.config.get_bidask_price_range() < 0 else bid_index - self.config.get_bidask_price_range()
+            max_range = ask_index + self.config.get_bidask_price_range()
             lst_price = lst_price[min_range:max_range]
         except ValueError:
             print(bid_price)
             print(ask_price)
             print(lst_price)
 
+        """
+        Create terminal table for visual
+        """
         table_data = []
         for ele_time in lst_time:
             value_data = []
             for ele_price in lst_price:
-                # Price from both bid and ask
-                if ele_price in self.bid_time_accumulator[ele_time] and \
-                        ele_price in self.ask_time_accumulator[ele_time]:
+                # PriceUtil from both bid and ask
+                if ele_price in self.bid_time_accumulator[ele_time] and ele_price in self.ask_time_accumulator[ele_time]:
                     bid_size = self.bid_time_accumulator[ele_time][ele_price]
                     ask_size = self.ask_time_accumulator[ele_time][ele_price]
                     value_data.append(
-                        color(self.add_space_bid(bid_size), fore=bid_colour_dictionary[bid_size], back=(0, 0, 0)) +
+                        color(self.add_space_bid(self.pu.slot_convertor(bid_size)),
+                              fore=bid_colour_dictionary[bid_size], back=(0, 0, 0)) +
                         ' ➜ ' +
-                        color(self.add_space_ask(ask_size), fore=ask_colour_dictionary[ask_size], back=(0, 0, 0)))
+                        color(self.add_space_ask(self.pu.slot_convertor(ask_size)),
+                              fore=ask_colour_dictionary[ask_size], back=(0, 0, 0)))
 
-                    # value_data.append(
-                    #     self.color_size(self.bid_time_accumulator[ele_time][ele_price],
-                    #                     self.ask_time_accumulator[ele_time][ele_price]))
-                # Price exist in BID but Not in ASK
-                elif ele_price in self.bid_time_accumulator[ele_time] and \
-                        ele_price not in self.ask_time_accumulator[ele_time]:
+                # PriceUtil exist in BID but Not in ASK
+                elif ele_price in self.bid_time_accumulator[ele_time] and ele_price not in self.ask_time_accumulator[ele_time]:
                     # Add the volume size
 
                     bid_size = self.bid_time_accumulator[ele_time][ele_price]
                     value_data.append(
-                        color(self.add_space_bid(bid_size), fore=bid_colour_dictionary[bid_size], back=(0, 0, 0)) +
+                        color(self.add_space_bid(self.pu.slot_convertor(bid_size)),
+                              fore=bid_colour_dictionary[bid_size], back=(0, 0, 0)) +
                         f' ➜ {self.add_space_ask("0")}')
 
-                    # value_data.append(self.color_size(self.bid_time_accumulator[ele_time][ele_price], 0))
-                # Price exist in ASK but Not in BID
+                # PriceUtil exist in ASK but Not in BID
                 elif ele_price not in self.bid_time_accumulator[ele_time] and \
                         ele_price in self.ask_time_accumulator[ele_time]:
                     # Add the volume size
                     ask_size = self.ask_time_accumulator[ele_time][ele_price]
                     value_data.append(f'{self.add_space_bid("0")} ➜ ' +
-                                      color(self.add_space_ask(ask_size), fore=ask_colour_dictionary[ask_size],
+                                      color(self.add_space_ask(self.pu.slot_convertor(ask_size)),
+                                            fore=ask_colour_dictionary[ask_size],
                                             back=(0, 0, 0)))
-                    # value_data.append(self.color_size(0, self.ask_time_accumulator[ele_time][ele_price]))
                 else:
                     value_data.append('')
             table_data.append(value_data)

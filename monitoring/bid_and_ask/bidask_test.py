@@ -1,4 +1,4 @@
-from bidask import BidAsk
+from monitoring.bid_and_ask.bidask import BidAsk
 import time
 
 file1 = open('test_data/bidask.csv', 'r')
