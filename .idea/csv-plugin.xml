@@ -31,7 +31,28 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/monitoring/time_sales_on_bid_ask/time_and_sales_on_bid_ask.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/monitoring/time_sales_on_bid_ask/time_and_sales_on_bid_ask_api_call.py">
+          <value>
+            <Attribute>
+              <option name="separator" value=":" />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/time_and_sales_monitoring/time_and_sales_visualizer.py">
+          <value>
+            <Attribute>
+              <option name="separator" value=":" />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/util/price_util.py">
           <value>
             <Attribute>
               <option name="separator" value=":" />

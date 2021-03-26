@@ -1,4 +1,4 @@
-from monitoring.time_sales_on_bid_ask.time_and_sales_on_bid_ask import TimeSalesBidAsk
+from time_sales_on_bid_ask_cut.time_and_sales_on_bid_ask_cut import TimeSalesBidAsk
 import time
 
 file1 = open('test_data/bid_ask_last.csv', 'r')
@@ -8,7 +8,7 @@ lines = lines[1:]
 time_sale_obj = TimeSalesBidAsk(ticker='AAPL', multiple_of_10sec=12)
 
 for line in lines:
-    time.sleep(5)
+    time.sleep(0.1)
     # Select individual price and size by the feed
     line_split = line.split(',')
     tick_time = line_split[0].split(' ')[-1]

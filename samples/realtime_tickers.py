@@ -58,7 +58,7 @@ class IBapi(EWrapper, EClient):
             print("AllLast.", end='')
 
         print(" ReqId:", reqId, "Time:", datetime.datetime.fromtimestamp(ticktime).strftime("%Y%m%d %H:%M:%S"),
-              "Price:",
+              "PriceUtil:",
               price, "Size:", size, "Exch:", exchange, "Spec Cond:", specialConditions, "PastLimit:",
               tickAtrribLast.pastLimit, "Unreported:",
               tickAtrribLast.unreported)
