@@ -110,20 +110,12 @@ class TimeSalesBidAsk:
         # BID size w.r.t BID price
         if time in self.dict_bid_size_on_bid:
             # If time already exist in dictionary
-            if closest_price in self.dict_bid_size_on_bid[time]:
-                if closest_price == bid_price:
-                    # Get the value dictionary by time and price and update the size
-                    self.dict_bid_size_on_bid[time][closest_price] = self.dict_bid_size_on_bid[time][closest_price] + bid_size
-                else:
-                    # Get the value dictionary by time and price and update the size
-                    self.dict_bid_size_on_bid[time][closest_price] = self.dict_bid_size_on_bid[time][closest_price] + 0
+            if closest_price == bid_price:
+                # Time exist but the price is not exist, create a element with price and size
+                self.dict_bid_size_on_bid[time][closest_price] = bid_size
             else:
-                if closest_price == bid_price:
-                    # Time exist but the price is not exist, create a element with price and size
-                    self.dict_bid_size_on_bid[time][closest_price] = bid_size
-                else:
-                    # Time exist but the price is not exist, create a element with price and size
-                    self.dict_bid_size_on_bid[time][closest_price] = 0
+                # Time exist but the price is not exist, create a element with price and size
+                self.dict_bid_size_on_bid[time][closest_price] = 0
         else:
             # New element creation with time, price and size
             # Create value dictionary with size
@@ -168,20 +160,12 @@ class TimeSalesBidAsk:
         # ASK size w.r.t ASK
         if time in self.dict_ask_size_on_ask:
             # If time already exist in dictionary
-            if closest_price in self.dict_ask_size_on_ask[time]:
-                if closest_price == ask_price:
-                    # Get the value dictionary by time and price and update the size
-                    self.dict_ask_size_on_ask[time][closest_price] = self.dict_ask_size_on_ask[time][closest_price] + ask_size
-                else:
-                    # Get the value dictionary by time and price and update the size
-                    self.dict_ask_size_on_ask[time][closest_price] = self.dict_ask_size_on_ask[time][closest_price] + 0
+            if closest_price == ask_price:
+                # Time exist but the price is not exist, create a element with price and size
+                self.dict_ask_size_on_ask[time][closest_price] = ask_size
             else:
-                if closest_price == ask_price:
-                    # Time exist but the price is not exist, create a element with price and size
-                    self.dict_ask_size_on_ask[time][closest_price] = ask_size
-                else:
-                    # Time exist but the price is not exist, create a element with price and size
-                    self.dict_ask_size_on_ask[time][closest_price] = 0
+                # Time exist but the price is not exist, create a element with price and size
+                self.dict_ask_size_on_ask[time][closest_price] = 0
         else:
             # New element creation with time, price and size
             # Create value dictionary with size
