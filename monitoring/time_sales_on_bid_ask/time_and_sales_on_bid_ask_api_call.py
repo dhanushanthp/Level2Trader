@@ -4,8 +4,7 @@ from ibapi.contract import Contract
 from ibapi.client import TickAttribLast, TickerId, TickAttribBidAsk
 import sys
 import datetime
-from numpy import random
-from time_and_sales_on_bid_ask import TimeSalesBidAsk
+from monitoring.time_sales_on_bid_ask.time_and_sales_on_bid_ask import TimeSalesBidAsk
 
 
 class IBapi(EWrapper, EClient):
@@ -21,8 +20,7 @@ class IBapi(EWrapper, EClient):
     def error(self, reqId: TickerId, errorCode: int, errorString: str):
         print(f"{reqId}, {errorCode}, {errorString}")
 
-    def tickByTickAllLast(self, reqId: int, tickType: int, ticktime: int, price: float, size: int,
-                          tickAtrribLast: TickAttribLast, exchange: str,
+    def tickByTickAllLast(self, reqId: int, tickType: int, ticktime: int, price: float, size: int, tickAtrribLast: TickAttribLast, exchange: str,
                           specialConditions: str):
         """
         Load the ticker All last Data
@@ -41,11 +39,11 @@ class IBapi(EWrapper, EClient):
         if tickType == 1:
             # Once the level II is available
             if self.bid:
-                self.time_and_sales.data_generator(datetime.datetime.fromtimestamp(ticktime).strftime("%H:%M:%S"),
-                                                   self.bid, self.bid_size, self.ask, self.ask_size, price, size)
+                self.time_and_sales.data_generator(datetime.datetime.fromtimestamp(ticktime).strftime("%H:%M:%S"), self.bid, self.bid_size, self.ask,
+                                                   self.ask_size, price, size)
 
-    def tickByTickBidAsk(self, reqId: int, time: int, bidPrice: float, askPrice: float,
-                         bidSize: int, askSize: int, tickAttribBidAsk: TickAttribBidAsk):
+    def tickByTickBidAsk(self, reqId: int, time: int, bidPrice: float, askPrice: float, bidSize: int, askSize: int,
+                         tickAttribBidAsk: TickAttribBidAsk):
         """
         Update the bid and ask price when ever the function triggered
         :param reqId:
@@ -84,12 +82,10 @@ def main():
     contract.primaryExchange = 'NASDAQ'
 
     # Request historical candles
-    app.reqTickByTickData(reqId=1008, contract=contract, tickType="BidAsk", numberOfTicks=0,
-                          ignoreSize=True)
+    app.reqTickByTickData(reqId=1008, contract=contract, tickType="BidAsk", numberOfTicks=0, ignoreSize=True)
 
     # Request historical candles
-    app.reqTickByTickData(reqId=1009, contract=contract, tickType="Last", numberOfTicks=0,
-                          ignoreSize=True)
+    app.reqTickByTickData(reqId=1009, contract=contract, tickType="Last", numberOfTicks=0, ignoreSize=True)
 
     app.run()
     # app.cancelTickByTickData(1)

@@ -1,4 +1,4 @@
-from time_and_sales import TimeAndSales
+from monitoring.time_and_sales.time_and_sales import TimeAndSales
 import time
 
 file1 = open('test_data/last.csv', 'r')

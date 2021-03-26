@@ -4,7 +4,7 @@ from ibapi.contract import Contract
 from ibapi.client import TickAttribLast, TickerId
 import sys
 import datetime
-from time_and_sales import TimeAndSales
+from monitoring.time_and_sales.time_and_sales import TimeAndSales
 from numpy import random
 
 

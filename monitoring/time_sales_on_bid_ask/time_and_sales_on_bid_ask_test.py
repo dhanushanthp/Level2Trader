@@ -1,4 +1,4 @@
-from time_and_sales_on_bid_ask import TimeSalesBidAsk
+from monitoring.time_sales_on_bid_ask.time_and_sales_on_bid_ask import TimeSalesBidAsk
 import time
 
 file1 = open('test_data/bid_ask_last.csv', 'r')

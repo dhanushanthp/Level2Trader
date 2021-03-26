@@ -3,6 +3,8 @@ from terminaltables import AsciiTable
 from colorclass import Color
 import numpy as np
 from colr import color
+from util import price_util
+from config import Config
 
 
 class TimeAndSales:
@@ -12,6 +14,8 @@ class TimeAndSales:
         self.ticker = ticker
         # white, yellow,blue,green,red
         self.colors = [(255, 255, 255), (255, 255, 0), (0, 255, 255), (0, 255, 0), (255, 0, 0)]
+        self.pu = price_util.PriceUtil()
+        self.config = Config()
 
     def get_colour_by_range(self, sizes: list) -> dict:
         colour_mapping = dict()
@@ -90,12 +94,12 @@ class TimeAndSales:
 
         # Balance the price range
         price_index = lst_price.index(current_price)
-        min_range = 0 if price_index - 20 < 0 else price_index - 20
-        max_range = price_index + 20
+        min_range = 0 if price_index - self.config.get_timesales_price_range() < 0 else price_index - self.config.get_timesales_price_range()
+        max_range = price_index + self.config.get_timesales_price_range()
         lst_price = lst_price[min_range:max_range]
 
         # New filtered price by range
-        price_hist_agg = [round(price_size_agg[i] / 1000) * '*' for i in lst_price]
+        price_hist_agg = [round(price_size_agg[i] / self.config.get_hist_blk_size()) * '*' for i in lst_price]
 
         table_data = []
         for ele_time in lst_time:
@@ -104,7 +108,7 @@ class TimeAndSales:
                 if ele_price in self.time_accumulator[ele_time]:
                     # Add the volume size
                     size = self.time_accumulator[ele_time][ele_price]
-                    value_data.append(color(size, fore=colour_dictionary[size], back=(0, 0, 0)))
+                    value_data.append(color(self.pu.slot_convertor(size), fore=colour_dictionary[size], back=(0, 0, 0)))
                 else:
                     value_data.append('')
             table_data.append(value_data)
