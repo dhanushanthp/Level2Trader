@@ -51,6 +51,18 @@ class TimeSalesBidAsk:
         return colour_mapping
 
     def data_generator(self, time, bid_price, bid_size, ask_price, ask_size, last_price, last_size):
+        """
+        1. Aggregate the size of trades w.r.t to bid price, ask price and last price.
+        2. Tag last price w.r.t bid and ask values by finding most possilbe or closest prices
+        :param time:
+        :param bid_price:
+        :param bid_size:
+        :param ask_price:
+        :param ask_size:
+        :param last_price:
+        :param last_size:
+        :return:
+        """
 
         # Adjust for 10 sec
         time = time[:-1]
@@ -130,12 +142,10 @@ class TimeSalesBidAsk:
             if closest_price in self.dict_last_size_on_ask[time]:
                 if closest_price == ask_price:
                     # Get the value dictionary by time and price and update the size
-                    self.dict_last_size_on_ask[time][closest_price] = self.dict_last_size_on_ask[time][
-                                                                     closest_price] + last_size
+                    self.dict_last_size_on_ask[time][closest_price] = self.dict_last_size_on_ask[time][closest_price] + last_size
                 else:
                     # Get the value dictionary by time and price and update the size
-                    self.dict_last_size_on_ask[time][closest_price] = self.dict_last_size_on_ask[time][
-                                                                     closest_price] + 0
+                    self.dict_last_size_on_ask[time][closest_price] = self.dict_last_size_on_ask[time][closest_price] + 0
             else:
                 if closest_price == ask_price:
                     # Time exist but the price is not exist, create a element with price and size
@@ -161,16 +171,14 @@ class TimeSalesBidAsk:
             if closest_price in self.dict_ask_size_on_ask[time]:
                 if closest_price == ask_price:
                     # Get the value dictionary by time and price and update the size
-                    self.dict_ask_size_on_ask[time][closest_price] = self.dict_ask_size_on_ask[time][
-                                                                     closest_price] + last_size
+                    self.dict_ask_size_on_ask[time][closest_price] = self.dict_ask_size_on_ask[time][closest_price] + ask_size
                 else:
                     # Get the value dictionary by time and price and update the size
-                    self.dict_ask_size_on_ask[time][closest_price] = self.dict_ask_size_on_ask[time][
-                                                                     closest_price] + 0
+                    self.dict_ask_size_on_ask[time][closest_price] = self.dict_ask_size_on_ask[time][closest_price] + 0
             else:
                 if closest_price == ask_price:
                     # Time exist but the price is not exist, create a element with price and size
-                    self.dict_ask_size_on_ask[time][closest_price] = last_size
+                    self.dict_ask_size_on_ask[time][closest_price] = ask_size
                 else:
                     # Time exist but the price is not exist, create a element with price and size
                     self.dict_ask_size_on_ask[time][closest_price] = 0
@@ -179,7 +187,7 @@ class TimeSalesBidAsk:
             # Create value dictionary with size
             value_dict = dict()
             if closest_price == ask_price:
-                value_dict[closest_price] = last_size
+                value_dict[closest_price] = ask_size
             else:
                 value_dict[closest_price] = 0
 
@@ -197,27 +205,29 @@ class TimeSalesBidAsk:
         """
 
         """
-        BID PriceUtil
+        BID Price
         """
         # Time, select the range of few minutes of data
         bid_lst_time = sorted(self.dict_last_size_on_bid.keys())[-self.last_x_min:]
 
         # reversed price. Low to High
         bid_lst_price = sorted(
-            list(
-                (set(itertools.chain.from_iterable(
-                    [list(self.dict_last_size_on_bid[i].keys()) for i in bid_lst_time])))),
-            reverse=True)
+            list((set(itertools.chain.from_iterable([list(self.dict_last_size_on_bid[i].keys()) for i in bid_lst_time])))), reverse=True)
 
         # Pick the sizes which are visible in the time frame
-        bid_sizes = sorted(
-            set(itertools.chain.from_iterable([self.dict_last_size_on_bid[i].values() for i in bid_lst_time])))
+        last_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_last_size_on_bid[i].values() for i in bid_lst_time])))
+
+        # Pick the sizes which are visible in the time frame
+        bid_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_bid_size_on_bid[i].values() for i in bid_lst_time])))
 
         # get the colour for each order size
-        bid_colour_dictionary = self.get_colour_by_bid(bid_sizes)
+        last_bid_colour_dictionary = self.get_colour_by_bid(last_bid_sizes)
+
+        # get the colour for each order size
+        bid_bid_colour_dictionary = self.get_colour_by_bid(bid_bid_sizes)
 
         """        
-        ASK PriceUtil
+        ASK Price
         """
         # Time, select the range of few minutes of data
         ask_lst_time = sorted(self.dict_last_size_on_ask.keys())[-self.last_x_min:]
@@ -231,13 +241,16 @@ class TimeSalesBidAsk:
 
         # Pick the sizes which are visible in the time frame
         # print(self.dict_last_size_on_ask)
-        ask_sizes = sorted(
+        last_ask_sizes = sorted(
             set(itertools.chain.from_iterable([self.dict_last_size_on_ask[i].values() for i in ask_lst_time])))
+        ask_ask_sizes = sorted(
+            set(itertools.chain.from_iterable([self.dict_ask_size_on_ask[i].values() for i in ask_lst_time])))
 
         # get the colour for each order size
-        ask_colour_dictionary = self.get_colour_by_ask(ask_sizes)
+        last_ask_colour_dictionary = self.get_colour_by_ask(last_ask_sizes)
+        ask_ask_colour_dictionary = self.get_colour_by_ask(ask_ask_sizes)
 
-        # PriceUtil histogram generation
+        # Price histogram generation
         bid_price_size = [self.dict_last_size_on_bid[i] for i in bid_lst_time]
         ask_price_size = [self.dict_last_size_on_ask[i] for i in ask_lst_time]
 
@@ -297,33 +310,42 @@ class TimeSalesBidAsk:
                 # PriceUtil from both bid and ask
                 if ele_price in self.dict_last_size_on_bid[ele_time] and \
                         ele_price in self.dict_last_size_on_ask[ele_time]:
-                    bid_size = self.dict_last_size_on_bid[ele_time][ele_price]
-                    ask_size = self.dict_last_size_on_ask[ele_time][ele_price]
+                    last_bid_size = self.dict_last_size_on_bid[ele_time][ele_price]
+                    last_ask_size = self.dict_last_size_on_ask[ele_time][ele_price]
+                    bid_bid_size = self.dict_bid_size_on_bid[ele_time][ele_price]
+                    ask_ask_size = self.dict_ask_size_on_ask[ele_time][ele_price]
                     value_data.append(
-                        color(self.pu.slot_convertor(bid_size), fore=bid_colour_dictionary[bid_size], back=(0, 0, 0)) +
+                        color(self.pu.slot_convertor(last_bid_size), fore=last_bid_colour_dictionary[last_bid_size], back=(0, 0, 0)) +
+                        '/' +
+                        color(self.pu.slot_convertor(bid_bid_size), fore=bid_bid_colour_dictionary[bid_bid_size], back=(0, 0, 0)) +
                         ' ➜ ' +
-                        color(self.pu.slot_convertor(ask_size), fore=ask_colour_dictionary[ask_size], back=(0, 0, 0)))
+                        color(self.pu.slot_convertor(last_ask_size), fore=last_ask_colour_dictionary[last_ask_size], back=(0, 0, 0)) +
+                        '/' +
+                        color(self.pu.slot_convertor(ask_ask_size), fore=ask_ask_colour_dictionary[ask_ask_size], back=(0, 0, 0))
+                    )
 
-                # PriceUtil exist in BID but Not in ASK
-                elif ele_price in self.dict_last_size_on_bid[ele_time] and \
-                        ele_price not in self.dict_last_size_on_ask[ele_time]:
+                # Price exist in BID but Not in ASK
+                elif ele_price in self.dict_last_size_on_bid[ele_time] and ele_price not in self.dict_last_size_on_ask[ele_time]:
+
                     # Add the volume size
-
-                    bid_size = self.dict_last_size_on_bid[ele_time][ele_price]
+                    last_bid_size = self.dict_last_size_on_bid[ele_time][ele_price]
+                    bid_bid_size = self.dict_bid_size_on_bid[ele_time][ele_price]
                     value_data.append(
-                        color(self.pu.slot_convertor(bid_size), fore=bid_colour_dictionary[bid_size], back=(0, 0, 0)) +
-                        f' ➜ {"0"}')
+                        color(self.pu.slot_convertor(last_bid_size), fore=last_bid_colour_dictionary[last_bid_size], back=(0, 0, 0)) +
+                        '/' +
+                        color(self.pu.slot_convertor(bid_bid_size), fore=bid_bid_colour_dictionary[bid_bid_size], back=(0, 0, 0))
+                        + f' ➜ {"0"}')
 
-                    # value_data.append(self.color_size(self.bid_time_accumulator[ele_time][ele_price], 0))
-                # PriceUtil exist in ASK but Not in BID
-                elif ele_price not in self.dict_last_size_on_bid[ele_time] and \
-                        ele_price in self.dict_last_size_on_ask[ele_time]:
+                # Price exist in ASK but Not in BID
+                elif ele_price not in self.dict_last_size_on_bid[ele_time] and ele_price in self.dict_last_size_on_ask[ele_time]:
                     # Add the volume size
-                    ask_size = self.dict_last_size_on_ask[ele_time][ele_price]
-                    value_data.append(f'{"0"} ➜ ' +
-                                      color(self.pu.slot_convertor(ask_size), fore=ask_colour_dictionary[ask_size],
-                                            back=(0, 0, 0)))
-                    # value_data.append(self.color_size(0, self.ask_time_accumulator[ele_time][ele_price]))
+                    last_ask_size = self.dict_last_size_on_ask[ele_time][ele_price]
+                    ask_ask_size = self.dict_ask_size_on_ask[ele_time][ele_price]
+                    value_data.append(
+                        f'{"0"} ➜ '
+                        + color(self.pu.slot_convertor(last_ask_size), fore=last_ask_colour_dictionary[last_ask_size], back=(0, 0, 0)) +
+                        '/' +
+                        color(self.pu.slot_convertor(ask_ask_size), fore=ask_ask_colour_dictionary[ask_ask_size], back=(0, 0, 0)))
                 else:
                     value_data.append('')
 
