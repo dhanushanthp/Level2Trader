@@ -1,11 +1,11 @@
 # BID and ASK 
-The bid and ask should not be aggregared. Because those are not executed trades.
+The bid and ask should not be aggregated. Because those are not executed trades.
 It's just display as a flash values. On other hand the last data should be aggregared
 Because those are completed trades.
 
 # Check List
 1. Why some time delay between tws and api
-    a. after chacing the terminal clearing to 100, the delay reducsd
+    a. after changing the terminal clearing to 100, the delay reduced
 2. If there is no delay, Is the values compare to tws is almost same match as the terminal values.
     1. Last on BID
     2. Last on ASK
@@ -14,8 +14,12 @@ Because those are completed trades.
     5. Relevant sizes
 3. Price Range: Works better without price range.
 4. Check the tool on bigger price stocks - AAPL
+5. fix color code for size values rather by auto range
+    1. Find the fixed range of sizes based on the stock movement
+    
+6. How to properly close the connection
 
-# Expirement
+# Experiment
 1. What ist he block size
 2. Time frame (20s, 15s, 10s)
 3. What is the perfect size for histogram.

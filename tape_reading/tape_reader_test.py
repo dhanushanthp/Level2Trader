@@ -8,7 +8,7 @@ lines = lines[1:]
 time_sale_obj = TapeReader(ticker='TESTING')
 
 for line in lines:
-    time.sleep(1)
+    time.sleep(.1)
     # Select individual price and size by the feed
     line_split = line.split(',')
     tick_time = line_split[0].split(' ')[-1]

@@ -10,13 +10,18 @@ import os
 
 class TapeReader:
     def __init__(self, ticker):
-        # Price and size w.r.t BID and last
+        """
+        We don't track the actual price of last price here. rather we find the most close bid and ask price for the last price.
+        The goal is to find the price on bid and price on ask for bullish and bearish signals.
+        :param ticker:
+        """
+        # Price and size w.r.t BID and last, Bearish signal
         self.dict_last_size_on_bid = dict()
-        # Price and size w.r.t ASK and last
+        # Price and size w.r.t ASK and last, Bullish signal
         self.dict_last_size_on_ask = dict()
-        # Price and size w.r.t BID only
+        # Price and size w.r.t BID only, Higher Bids Holding, Bullish signal
         self.dict_bid_size_on_bid = dict()
-        # Price and size w.r.t ASK only
+        # Price and size w.r.t ASK only, Higher Asks Holding, Bearish signal
         self.dict_ask_size_on_ask = dict()
         self.clear = lambda: os.system('clear')
         self.counter = 0
@@ -100,7 +105,8 @@ class TapeReader:
 
         """
         Last size w.r.t BID price
-        Find the closest price for last price. If the closes price match to bid price. Then the transaction considered as "Trade on BID"
+        Find the closest price for last price. If the closes price match to bid price. Then the transaction considered as "Trade on BID", 
+        Bearish Signal
         """
         if tick_time in self.dict_last_size_on_bid:
             # If time already exist in dictionary
@@ -145,7 +151,8 @@ class TapeReader:
 
         """
         Last size w.r.t ASK price
-        Find the closest price for last price. If the closes price match to ask price. Then the transaction considered as "Trade on ASK"
+        Find the closest price for last price. If the closes price match to ask price. Then the transaction considered as "Trade on ASK",
+        Bullish Signal
         """
         if tick_time in self.dict_last_size_on_ask:
             # If time already exist in dictionary
@@ -198,7 +205,6 @@ class TapeReader:
         if ask_price not in self.dict_last_size_on_ask[tick_time]:
             self.dict_last_size_on_ask[tick_time][ask_price] = 0
 
-        # print(chr(27) + "[2J")
         # Call function to generate table
         self.counter = self.counter + 1
         if self.counter == 100:
@@ -217,36 +223,33 @@ class TapeReader:
         :return: table for terminal visualisation
         """
 
-        # Limit the time,take bid as reference because the time across dictionary will be same. That how the data aggregation has been done
-        time_limit = sorted(self.dict_last_size_on_bid.keys())[-self.time_ticks_filter:]
+        # Limit the moving time, take bid as reference because the time across dictionary will be same. That how the data aggregation has been done
+        global_time_limit = sorted(self.dict_last_size_on_bid.keys())[-self.time_ticks_filter:]
 
         """
         Price and Size w.r.t BID
         """
-        # Time, select the range of few minutes of data
+        # Time, select the range of last few ticks of data
         # reversed price. Low to High
         last_bid_prices = sorted(
-            list((set(itertools.chain.from_iterable([list(self.dict_last_size_on_bid[i].keys()) for i in time_limit])))), reverse=True)
+            list((set(itertools.chain.from_iterable([list(self.dict_last_size_on_bid[i].keys()) for i in global_time_limit])))), reverse=True)
 
         # Pick the sizes which are visible in the time frame
-        last_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_last_size_on_bid[i].values() for i in time_limit])))
-
-        # Pick the sizes which are visible in the time frame
-        bid_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_bid_size_on_bid[i].values() for i in time_limit])))
+        last_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_last_size_on_bid[i].values() for i in global_time_limit])))
 
         # get the colour for each order size
         last_bid_colour_dictionary = self.get_colour_by_bid(last_bid_sizes)
+
+        # Pick the sizes which are visible in the time frame
+        bid_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_bid_size_on_bid[i].values() for i in global_time_limit])))
 
         # get the colour for each order size
         bid_bid_colour_dictionary = self.get_colour_by_bid(bid_bid_sizes)
 
         # BID on BID
-        # Time, select the range of few minutes of data
-        bid_bid_times = sorted(self.dict_bid_size_on_bid.keys())[-self.time_ticks_filter:]
-
         # reversed price. Low to High
         bid_bid_lst_price = sorted(
-            list((set(itertools.chain.from_iterable([list(self.dict_bid_size_on_bid[i].keys()) for i in bid_bid_times])))), reverse=True)
+            list((set(itertools.chain.from_iterable([list(self.dict_bid_size_on_bid[i].keys()) for i in global_time_limit])))), reverse=True)
 
         """        
         Price and Size w.r.t ASK
@@ -256,31 +259,28 @@ class TapeReader:
         ask_lst_price = sorted(
             list(
                 (set(itertools.chain.from_iterable(
-                    [list(self.dict_last_size_on_ask[i].keys()) for i in time_limit])))),
+                    [list(self.dict_last_size_on_ask[i].keys()) for i in global_time_limit])))),
             reverse=True)
 
         # Pick the sizes which are visible in the time frame
         # print(self.dict_last_size_on_ask)
         last_ask_sizes = sorted(
-            set(itertools.chain.from_iterable([self.dict_last_size_on_ask[i].values() for i in time_limit])))
+            set(itertools.chain.from_iterable([self.dict_last_size_on_ask[i].values() for i in global_time_limit])))
         ask_ask_sizes = sorted(
-            set(itertools.chain.from_iterable([self.dict_ask_size_on_ask[i].values() for i in time_limit])))
+            set(itertools.chain.from_iterable([self.dict_ask_size_on_ask[i].values() for i in global_time_limit])))
 
         # get the colour for each order size
         last_ask_colour_dictionary = self.get_colour_by_ask(last_ask_sizes)
         ask_ask_colour_dictionary = self.get_colour_by_ask(ask_ask_sizes)
 
         # ASK on ASK
-        # Time, select the range of few minutes of data
-        ask_ask_lst_time = sorted(self.dict_ask_size_on_ask.keys())[-self.time_ticks_filter:]
-
         # reversed price. Low to High
         ask_ask_lst_price = sorted(
-            list((set(itertools.chain.from_iterable([list(self.dict_ask_size_on_ask[i].keys()) for i in ask_ask_lst_time])))), reverse=True)
+            list((set(itertools.chain.from_iterable([list(self.dict_ask_size_on_ask[i].keys()) for i in global_time_limit])))), reverse=True)
 
         # Price histogram generation
-        bid_price_size = [self.dict_last_size_on_bid[i] for i in time_limit]
-        ask_price_size = [self.dict_last_size_on_ask[i] for i in time_limit]
+        bid_price_size = [self.dict_last_size_on_bid[i] for i in global_time_limit]  # Price on Bid, Bearish Signal
+        ask_price_size = [self.dict_last_size_on_ask[i] for i in global_time_limit]  # Price on Ask, Bullish Signal
 
         bid_price_size_agg = dict()
         for ps in bid_price_size:
@@ -315,7 +315,7 @@ class TapeReader:
         except ValueError as e:
             """
             It's perfectly fine pass this exception. Because we may have cases like below
-            1. Currenly we read only the last price after the completion. Therefore we may not able to find,
+            1. Currently we read only the last price after the completion. Therefore we may not able to find,
                 1. Ask price on current price list. which may not be executed so far
                 2. Bid price on current price list. which may not be executed so far
             
@@ -324,15 +324,19 @@ class TapeReader:
             pass
 
         # New filtered price by range
-        bid_price_hist_agg = [round(bid_price_size_agg[i] / self.config.get_hist_blk_size()) * '+' for i in lst_price]
-        ask_price_hist_agg = [round(ask_price_size_agg[i] / self.config.get_hist_blk_size()) * '|' for i in lst_price]
+        # Price on ask bullish
+        ask_price_hist_agg = [round(ask_price_size_agg[i] / self.config.get_hist_blk_size()) * color('↑', fore=(0, 255, 0), back=(0, 0, 0)) for i in
+                              lst_price]
+        # Price on bid bearish
+        bid_price_hist_agg = [round(bid_price_size_agg[i] / self.config.get_hist_blk_size()) * color('↓', fore=(255, 0, 0), back=(0, 0, 0)) for i in
+                              lst_price]
 
         """
-        Used the bid time and price. Since both will be consistent in bid and ask dictionaries. Handled in dictionary
+        Used the bid time and price. Since both will be consistent in bid and ask dictionaries by time. Handled in dictionary
         generation
         """
         table_data = []
-        for ele_time in time_limit:
+        for ele_time in global_time_limit:
             value_data = []
             for ele_price in lst_price:
                 # Price both bid and ask
@@ -434,26 +438,26 @@ class TapeReader:
         # '\033[1m'  add the boldness the text
         if bid_index:
             try:
-                lst_price[bid_index] = Color('{autogreen}' + '\033[1m' + str(bid_price) + '{/autogreen}')
+                lst_price[bid_index] = Color('{autogreen}' + str(bid_price) + '{/autogreen}')
             except IndexError:
                 pass
         if ask_index:
             try:
-                lst_price[ask_index] = Color('{autored}' + '\033[1m' + str(ask_price) + '{/autored}')
+                lst_price[ask_index] = Color('{autored}' + str(ask_price) + '{/autored}')
             except IndexError:
                 pass
         if current_index:
             try:
-                lst_price[current_index] = Color('{autoyellow}' + '\033[1m' + str(closest_price) + '{/autoyellow}')
+                lst_price[current_index] = Color('{autoyellow}' + str(closest_price) + '{/autoyellow}')
             except IndexError:
                 pass
 
         # Add price and time accordingly as header and index
         table_data.append(lst_price)
-        table_data.append(bid_price_hist_agg)
         table_data.append(ask_price_hist_agg)
+        table_data.append(bid_price_hist_agg)
         table_data = list(map(list, zip(*table_data)))
-        table_data.insert(0, time_limit + ['price', 'bid', 'ask'])
+        table_data.insert(0, global_time_limit + ['price', 'on ask', 'on bid'])
 
         # Create table instance
         table_instance = AsciiTable(table_data, f'****  {self.ticker}  ****')
