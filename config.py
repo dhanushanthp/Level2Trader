@@ -19,6 +19,9 @@ class Config:
     def get_timesales_price_range(self):
         return self.config.getint('TIME_SALES', 'price_range')
 
+    def get_price_range_enabler(self):
+        return self.config.getboolean('TIME_SALES', 'enable_price_range')
+
     def get_slot_size(self):
         """
         Stock size representation in the table. Where each size will be divided by block size for normalization

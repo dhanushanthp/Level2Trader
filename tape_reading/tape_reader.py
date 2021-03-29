@@ -32,10 +32,10 @@ class TapeReader:
 
         # Ticker by each second, So the size aggregation will be done by seconds
         self.ticker = ticker
-        # white,white, yellow,yellow,green
-        self.colors_bid = [(255, 255, 255), (255, 255, 255), (255, 255, 0), (255, 255, 0), (0, 255, 0)]
-        # white,white, yellow,yellow,red
-        self.colors_ask = [(255, 255, 255), (255, 255, 255), (255, 255, 0), (255, 255, 0), (255, 0, 0)]
+        # green,green,yellow,yellow,white,white,
+        self.colors_bid = [(0, 255, 0), (0, 255, 0), (255, 255, 0), (255, 255, 0), (255, 255, 255), (255, 255, 255)]
+        # red,red,yellow,yellow,white,white,
+        self.colors_ask = [(255, 0, 0), (255, 0, 0), (255, 255, 0), (255, 255, 0), (255, 255, 255), (255, 255, 255)]
 
         self.pu = price_util.PriceUtil()
         self.config = Config()
@@ -59,12 +59,13 @@ class TapeReader:
         :return: dictionary of colors [key: size, value: color]
         """
         colour_mapping = dict()
+        sizes = sorted(sizes, reverse=True)
         values = np.array_split(np.array(sizes), len(self.colors_bid))
         for i, val_lst in enumerate(values):
             for size in val_lst:
                 colour_mapping[size] = self.colors_bid[i]
         # Create colour for size 0
-        colour_mapping[0] = self.colors_bid[0]
+        colour_mapping[0] = self.colors_bid[5]
 
         return colour_mapping
 
@@ -75,12 +76,13 @@ class TapeReader:
         :return: dictionary of colors [key: size, value: color]
         """
         colour_mapping = dict()
+        sizes = sorted(sizes, reverse=True)
         values = np.array_split(np.array(sizes), len(self.colors_ask))
         for i, val_lst in enumerate(values):
             for size in val_lst:
                 colour_mapping[size] = self.colors_ask[i]
         # Create colour for size 0
-        colour_mapping[0] = self.colors_ask[0]
+        colour_mapping[0] = self.colors_ask[5]
         return colour_mapping
 
     def data_generator(self, tick_time: str, bid_price, bid_size, ask_price, ask_size, last_price, last_size):
@@ -305,20 +307,19 @@ class TapeReader:
                     ask_price_size_agg[p] = ps[p]
 
         # Balance the price range
-        bid_index = None
-        ask_index = None
-        current_index = None
+        # bid_index = None
+        # ask_index = None
         lst_price = sorted(set(last_bid_prices + ask_lst_price + bid_bid_lst_price + ask_ask_lst_price), reverse=True)
 
         try:
             bid_index = lst_price.index(bid_price)
             ask_index = lst_price.index(ask_price)
-            # print(bid_index, ask_index, closest_price)
-            # current_index = lst_price.index(closest_price)
+
             # Add the range of moment for the table
-            min_range = 0 if bid_index - self.config.get_timesales_price_range() < 0 else bid_index - self.config.get_timesales_price_range()
-            max_range = ask_index + self.config.get_timesales_price_range()
-            # lst_price = lst_price[min_range:max_range]
+            if self.config.get_price_range_enabler():
+                min_range = 0 if bid_index - self.config.get_timesales_price_range() < 0 else bid_index - self.config.get_timesales_price_range()
+                max_range = ask_index + self.config.get_timesales_price_range()
+                lst_price = lst_price[min_range:max_range]
         except ValueError as e:
             """
             It's perfectly fine pass this exception. Because we may have cases like below
@@ -328,6 +329,7 @@ class TapeReader:
                 
             So we don't need to track if those prices are out of rance
             """
+            raise e
             pass
 
         # New filtered price by range
@@ -453,6 +455,7 @@ class TapeReader:
                     lst_price[bid_index] = Color('{autored}' + str(bid_price) + '{/autored}')
             except IndexError:
                 pass
+
         if ask_index is not None:
             try:
                 if closest_price == ask_price:
