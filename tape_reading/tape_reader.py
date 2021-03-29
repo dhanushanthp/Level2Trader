@@ -27,15 +27,24 @@ class TapeReader:
         self.concurrent_bids = 0
         # Counter of concurrent bid calls
         self.concurrent_asks = 0
+        # Clear Terminal
         self.clear = lambda: os.system('clear')
         self.counter = 0
+
+        # Dynamic Histogram block size, Default 100, Find the max transaction size and update accordingly
+        self.histogram_block_size = 100
+
+        # Most high price on ask, Bullish
+        self.top_sales_on_ask = None
+        # Most hit price on bids, Bearish
+        self.top_sales_on_bid = None
 
         # Ticker by each second, So the size aggregation will be done by seconds
         self.ticker = ticker
         # green,green,yellow,yellow,white,white,
-        self.colors_bid = [(0, 255, 0), (0, 255, 0), (255, 255, 0), (255, 255, 0), (255, 255, 255), (255, 255, 255)]
+        self.colors_bullish = [(0, 255, 0), (0, 255, 0), (255, 255, 0), (255, 255, 0), (255, 255, 255), (255, 255, 255)]
         # red,red,yellow,yellow,white,white,
-        self.colors_ask = [(255, 0, 0), (255, 0, 0), (255, 255, 0), (255, 255, 0), (255, 255, 255), (255, 255, 255)]
+        self.colors_bearish = [(255, 0, 0), (255, 0, 0), (255, 255, 0), (255, 255, 0), (255, 255, 255), (255, 255, 255)]
 
         self.pu = price_util.PriceUtil()
         self.config = Config()
@@ -52,7 +61,7 @@ class TapeReader:
         """
         return min([bid, ask], key=lambda x: abs(x - last))
 
-    def get_colour_by_bid(self, sizes: list) -> dict:
+    def get_colour_by_bullish(self, sizes: list) -> dict:
         """
         Generate color shades w.r.t range of size
         :param sizes: listed trade size w.r.t bid price on time ans sales
@@ -60,16 +69,16 @@ class TapeReader:
         """
         colour_mapping = dict()
         sizes = sorted(sizes, reverse=True)
-        values = np.array_split(np.array(sizes), len(self.colors_bid))
+        values = np.array_split(np.array(sizes), len(self.colors_bullish))
         for i, val_lst in enumerate(values):
             for size in val_lst:
-                colour_mapping[size] = self.colors_bid[i]
+                colour_mapping[size] = self.colors_bullish[i]
         # Create colour for size 0
-        colour_mapping[0] = self.colors_bid[5]
+        colour_mapping[0] = self.colors_bullish[5]
 
         return colour_mapping
 
-    def get_colour_by_ask(self, sizes: list) -> dict:
+    def get_colour_by_bearish(self, sizes: list) -> dict:
         """
         Generate color shades w.r.t range of size
         :param sizes: listed tratde size w.r.t ask price on time ans sales
@@ -77,12 +86,12 @@ class TapeReader:
         """
         colour_mapping = dict()
         sizes = sorted(sizes, reverse=True)
-        values = np.array_split(np.array(sizes), len(self.colors_ask))
+        values = np.array_split(np.array(sizes), len(self.colors_bearish))
         for i, val_lst in enumerate(values):
             for size in val_lst:
-                colour_mapping[size] = self.colors_ask[i]
+                colour_mapping[size] = self.colors_bearish[i]
         # Create colour for size 0
-        colour_mapping[0] = self.colors_ask[5]
+        colour_mapping[0] = self.colors_bearish[5]
         return colour_mapping
 
     def data_generator(self, tick_time: str, bid_price, bid_size, ask_price, ask_size, last_price, last_size):
@@ -103,6 +112,10 @@ class TapeReader:
         tick_time = tick_time
         # Find the closest price w.r.t to last price on bid or ask
         closest_price = self.find_closest(bid_price, ask_price, last_price)
+
+        # Find the biggest transaction size for histogram block size and update, Not exceed 10k sales
+        if (last_size > self.histogram_block_size) and (self.histogram_block_size < 10000):
+            self.histogram_block_size = last_size
 
         """
         Time accumulator dictionary is a dictionary of, dictionary data structure. 
@@ -219,6 +232,8 @@ class TapeReader:
             # Clear each 2 min
             self.clear()
             self.counter = 0
+            # Reset histogram block size on every terminal clear command
+            self.histogram_block_size = 100
 
         print(self.data_table_generator(closest_price, bid_price, ask_price) + '\n\n\n\n')
 
@@ -245,14 +260,14 @@ class TapeReader:
         # Pick the sizes which are visible in the time frame
         last_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_last_size_on_bid[i].values() for i in global_time_limit])))
 
-        # get the colour for each order size
-        last_bid_colour_dictionary = self.get_colour_by_bid(last_bid_sizes)
+        # get the colour for each order size, Bearish Signal, RED color as main
+        last_bid_colour_dictionary = self.get_colour_by_bearish(last_bid_sizes)
 
         # Pick the sizes which are visible in the time frame
         bid_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_bid_size_on_bid[i].values() for i in global_time_limit])))
 
-        # get the colour for each order size
-        bid_bid_colour_dictionary = self.get_colour_by_bid(bid_bid_sizes)
+        # get the colour for each order size, Higher Bids and hold Bullish
+        bid_bid_colour_dictionary = self.get_colour_by_bullish(bid_bid_sizes)
 
         # BID on BID
         # reversed price. Low to High
@@ -277,9 +292,10 @@ class TapeReader:
         ask_ask_sizes = sorted(
             set(itertools.chain.from_iterable([self.dict_ask_size_on_ask[i].values() for i in global_time_limit])))
 
-        # get the colour for each order size
-        last_ask_colour_dictionary = self.get_colour_by_ask(last_ask_sizes)
-        ask_ask_colour_dictionary = self.get_colour_by_ask(ask_ask_sizes)
+        # get the colour for each order size, Price on Ask Bullish
+        last_ask_colour_dictionary = self.get_colour_by_bullish(last_ask_sizes)
+        # Higher Asks, Bearish
+        ask_ask_colour_dictionary = self.get_colour_by_bearish(ask_ask_sizes)
 
         # ASK on ASK
         # reversed price. Low to High
@@ -334,10 +350,10 @@ class TapeReader:
 
         # New filtered price by range
         # Price on ask bullish
-        ask_price_hist_agg = [round(ask_price_size_agg[i] / self.config.get_hist_blk_size()) * color('↑', fore=(0, 255, 0), back=(0, 0, 0)) for i in
+        ask_price_hist_agg = [round(ask_price_size_agg[i] / self.histogram_block_size) * color('↑', fore=(0, 255, 0), back=(0, 0, 0)) for i in
                               lst_price]
         # Price on bid bearish
-        bid_price_hist_agg = [round(bid_price_size_agg[i] / self.config.get_hist_blk_size()) * color('↓', fore=(255, 0, 0), back=(0, 0, 0)) for i in
+        bid_price_hist_agg = [round(bid_price_size_agg[i] / self.histogram_block_size) * color('↓', fore=(255, 0, 0), back=(0, 0, 0)) for i in
                               lst_price]
 
         """
@@ -469,17 +485,20 @@ class TapeReader:
             except IndexError:
                 pass
 
+        # Show concurrent bids and ask count
+        concon_asks = Color('{autogreen}On Ask (' + str(self.concurrent_asks) + '){/autogreen}')
+        concon_bids = Color('{autored}On Bid (' + str(self.concurrent_bids) + '){/autored}')
+
         # Add price and time accordingly as header and index
         table_data.append(lst_price)
         table_data.append(ask_price_hist_agg)
         table_data.append(bid_price_hist_agg)
         table_data = list(map(list, zip(*table_data)))
-        table_data.insert(0, global_time_limit + ['price', 'on ask', 'on bid'])
+        table_data.insert(0, global_time_limit + ['Price', concon_asks, concon_bids])
 
         # Create table instance
-        concon_bids = Color('{autored}' + str(self.concurrent_bids) + '{/autored}')
-        concon_asks = Color('{autogreen}' + str(self.concurrent_asks) + '{/autogreen}')
-        table_instance = AsciiTable(table_data, f'{self.ticker}     BID: {concon_bids}      ASK: {concon_asks}')
+        table_instance = AsciiTable(table_data,
+                                    f'  {self.ticker}   Spread: {round(ask_price - bid_price, 2)} Histogram Blocks: {self.histogram_block_size}')
         table_instance.inner_heading_row_border = False
         table_instance.inner_row_border = True
         table_instance.inner_column_border = False
