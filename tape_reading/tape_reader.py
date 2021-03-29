@@ -6,7 +6,8 @@ from colr import color
 from util import price_util
 from config import Config
 import os
-from collections import OrderedDict
+from numerize.numerize import numerize
+
 
 class TapeReader:
     def __init__(self, ticker):
@@ -35,9 +36,9 @@ class TapeReader:
         self.histogram_block_size = 100
 
         # Most high price on ask, Bullish within the price range
-        self.top_sales_on_ask = OrderedDict()
+        self.top_sales_on_ask = dict()
         # Most hit price on bids, Bearish within the price range
-        self.top_sales_on_bid = OrderedDict()
+        self.top_sales_on_bid = dict()
 
         # Ticker by each second, So the size aggregation will be done by seconds
         self.ticker = ticker
@@ -113,10 +114,6 @@ class TapeReader:
         # Find the closest price w.r.t to last price on bid or ask
         closest_price = self.find_closest(bid_price, ask_price, last_price)
 
-        # Find the biggest transaction size for histogram block size and update, Not exceed 10k sales
-        if (last_size > self.histogram_block_size) and (self.histogram_block_size < 10000):
-            self.histogram_block_size = last_size
-
         """
         Time accumulator dictionary is a dictionary of, dictionary data structure. 
         Dictionary: {Key: Time, value: Dictionary(key: price, value: size)}
@@ -124,10 +121,37 @@ class TapeReader:
         """
 
         """
+        Keep track of price on bid w.r.t highest size
+        """
+        if closest_price == bid_price:
+            if closest_price in self.top_sales_on_bid:
+                if self.top_sales_on_bid[closest_price] < last_size:
+                    self.top_sales_on_bid[closest_price] = last_size
+            else:
+                self.top_sales_on_bid[closest_price] = last_size
+
+        """
+        Keep track of price on bid w.r.t highest size
+        """
+        if closest_price == ask_price:
+            if closest_price in self.top_sales_on_ask:
+                if self.top_sales_on_ask[closest_price] < last_size:
+                    self.top_sales_on_ask[closest_price] = last_size
+            else:
+                self.top_sales_on_ask[closest_price] = last_size
+
+        # if closest_price not in self.top_sales_on_bid:
+        #     self.top_sales_on_bid[closest_price] = 0
+        #
+        # if closest_price not in self.top_sales_on_ask:
+        #     self.top_sales_on_ask[closest_price] = 0
+
+        """
         Last size w.r.t BID price
         Find the closest price for last price. If the closest price match to bid price. Then the transaction considered as "Trade on BID", 
         Bearish Signal
         """
+
         if tick_time in self.dict_last_size_on_bid:
             # If time already exist in dictionary
             if closest_price in self.dict_last_size_on_bid[tick_time]:
@@ -353,8 +377,12 @@ class TapeReader:
             raise e
             pass
 
+        # Select the top size on bid and ask based on the current price range
+        top_sales_on_ask_list = [numerize(self.top_sales_on_ask[i]) if i in self.top_sales_on_ask else '' for i in lst_price]
+        top_sales_on_bid_list = [numerize(self.top_sales_on_bid[i]) if i in self.top_sales_on_bid else '' for i in lst_price]
+
         # Find the average of sales on mean of bid and ask, Keep the block size consistanct across bid and ask to see the trend
-        self.histogram_block_size = round((max_last_bid_size + max_last_ask_size)/2)
+        self.histogram_block_size = round((max_last_bid_size + max_last_ask_size) / 2)
 
         # Price on ask bullish
         ask_price_hist_agg = [round(ask_price_size_agg[i] / self.histogram_block_size) * color('↑', fore=(0, 255, 0), back=(0, 0, 0)) for i in
@@ -372,8 +400,7 @@ class TapeReader:
             value_data = []
             for ele_price in lst_price:
                 # Price both bid and ask
-                if ele_price in self.dict_last_size_on_bid[ele_time] and \
-                        ele_price in self.dict_last_size_on_ask[ele_time]:
+                if ele_price in self.dict_last_size_on_bid[ele_time] and ele_price in self.dict_last_size_on_ask[ele_time]:
 
                     # Select sizes for each price and time
                     last_bid_size = self.dict_last_size_on_bid[ele_time][ele_price]
@@ -499,9 +526,11 @@ class TapeReader:
         # Add price and time accordingly as header and index
         table_data.append(lst_price)
         table_data.append(ask_price_hist_agg)
+        table_data.append(top_sales_on_ask_list)
         table_data.append(bid_price_hist_agg)
+        table_data.append(top_sales_on_bid_list)
         table_data = list(map(list, zip(*table_data)))
-        table_data.insert(0, global_time_limit + ['Price', concon_asks, concon_bids])
+        table_data.insert(0, global_time_limit + ['Price', concon_asks, 'Top Ask', concon_bids, 'Top Bid'])
 
         # Create table instance
         table_instance = AsciiTable(table_data,
@@ -513,4 +542,6 @@ class TapeReader:
         # Align text for price column
         time_length = len(global_time_limit)
         table_instance.justify_columns = {time_length: 'right'}
+        # print(self.top_sales_on_ask)
+        # print(self.top_sales_on_bid)
         return table_instance.table
