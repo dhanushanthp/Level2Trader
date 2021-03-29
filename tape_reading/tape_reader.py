@@ -6,7 +6,7 @@ from colr import color
 from util import price_util
 from config import Config
 import os
-
+from collections import OrderedDict
 
 class TapeReader:
     def __init__(self, ticker):
@@ -34,10 +34,10 @@ class TapeReader:
         # Dynamic Histogram block size, Default 100, Find the max transaction size and update accordingly
         self.histogram_block_size = 100
 
-        # Most high price on ask, Bullish
-        self.top_sales_on_ask = None
-        # Most hit price on bids, Bearish
-        self.top_sales_on_bid = None
+        # Most high price on ask, Bullish within the price range
+        self.top_sales_on_ask = OrderedDict()
+        # Most hit price on bids, Bearish within the price range
+        self.top_sales_on_bid = OrderedDict()
 
         # Ticker by each second, So the size aggregation will be done by seconds
         self.ticker = ticker
@@ -232,8 +232,6 @@ class TapeReader:
             # Clear each 2 min
             self.clear()
             self.counter = 0
-            # Reset histogram block size on every terminal clear command
-            self.histogram_block_size = 100
 
         print(self.data_table_generator(closest_price, bid_price, ask_price) + '\n\n\n\n')
 
