@@ -23,9 +23,14 @@ class TapeReader:
         self.dict_bid_size_on_bid = dict()
         # Price and size w.r.t ASK only, Higher Asks Holding, Bearish signal
         self.dict_ask_size_on_ask = dict()
+        # Counter of concurrent bid calls
+        self.concurrent_bids = 0
+        # Counter of concurrent bid calls
+        self.concurrent_asks = 0
         self.clear = lambda: os.system('clear')
         self.counter = 0
 
+        # Ticker by each second, So the size aggregation will be done by seconds
         self.ticker = ticker
         # white,white, yellow,yellow,green
         self.colors_bid = [(255, 255, 255), (255, 255, 255), (255, 255, 0), (255, 255, 0), (0, 255, 0)]
@@ -98,14 +103,14 @@ class TapeReader:
         closest_price = self.find_closest(bid_price, ask_price, last_price)
 
         """
-        Time accumulator dictionary is a dictionary of dictionary data structure. 
+        Time accumulator dictionary is a dictionary of, dictionary data structure. 
         Dictionary: {Key: Time, value: Dictionary(key: price, value: size)}
-        The size will be updated through the iteration process by finding time and price accordingly
+        The size will be updated and aggregated through the iteration process by finding time and price accordingly
         """
 
         """
         Last size w.r.t BID price
-        Find the closest price for last price. If the closes price match to bid price. Then the transaction considered as "Trade on BID", 
+        Find the closest price for last price. If the closest price match to bid price. Then the transaction considered as "Trade on BID", 
         Bearish Signal
         """
         if tick_time in self.dict_last_size_on_bid:
@@ -113,8 +118,8 @@ class TapeReader:
             if closest_price in self.dict_last_size_on_bid[tick_time]:
                 if closest_price == bid_price:
                     '''
-                    Get the value dictionary by time and price and update the size. If the price don't match to bid price. Then it will be caught in
-                    ask price
+                    Get the value from the dictionary by time and price and update the size. If the price don't match to bid price. Then it will be 
+                    caught in ask price
                     '''
                     self.dict_last_size_on_bid[tick_time][closest_price] = self.dict_last_size_on_bid[tick_time][closest_price] + last_size
             else:
@@ -191,7 +196,8 @@ class TapeReader:
             self.dict_ask_size_on_ask[tick_time] = value_dict
 
         """
-        Create dummy bid price tag with 0 size.
+        Create dummy bid price tag with 0 size
+        Only for last price related dictionaries because, the bid and ask price based dictionary will be filled always
         """
         if bid_price not in self.dict_last_size_on_bid[tick_time]:
             self.dict_last_size_on_bid[tick_time][bid_price] = 0
@@ -205,9 +211,9 @@ class TapeReader:
         if ask_price not in self.dict_last_size_on_ask[tick_time]:
             self.dict_last_size_on_ask[tick_time][ask_price] = 0
 
-        # Call function to generate table
+        # Call function to generate table, Refresh rate of terminal
         self.counter = self.counter + 1
-        if self.counter == 100:
+        if self.counter == self.config.get_refresh_rate():
             # Clear each 2 min
             self.clear()
             self.counter = 0
@@ -216,7 +222,7 @@ class TapeReader:
 
     def data_table_generator(self, closest_price: float, bid_price: float, ask_price: float):
         """
-        Generate table for terminal input
+        Generate table for terminal outputs
         :param closest_price: The price closest to bid or ask w.r.t last price. Which may not be an actual last price
         :param bid_price: bid price, level II first tier only
         :param ask_price: ask price, level II first tier only
@@ -307,7 +313,8 @@ class TapeReader:
         try:
             bid_index = lst_price.index(bid_price)
             ask_index = lst_price.index(ask_price)
-            current_index = lst_price.index(closest_price)
+            # print(bid_index, ask_index, closest_price)
+            # current_index = lst_price.index(closest_price)
             # Add the range of moment for the table
             min_range = 0 if bid_index - self.config.get_timesales_price_range() < 0 else bid_index - self.config.get_timesales_price_range()
             max_range = ask_index + self.config.get_timesales_price_range()
@@ -318,8 +325,8 @@ class TapeReader:
             1. Currently we read only the last price after the completion. Therefore we may not able to find,
                 1. Ask price on current price list. which may not be executed so far
                 2. Bid price on current price list. which may not be executed so far
-            
-            So we don't need to track if thouse prices are out of rance
+                
+            So we don't need to track if those prices are out of rance
             """
             pass
 
@@ -434,21 +441,28 @@ class TapeReader:
         # Add current price pointer
         lst_price = ['{:0.2f}'.format(i) for i in lst_price]
 
-        # Only show the indicators if they are in valid range
-        # '\033[1m'  add the boldness the text
-        if bid_index:
+        if bid_index is not None:
             try:
-                lst_price[bid_index] = Color('{autogreen}' + str(bid_price) + '{/autogreen}')
+                if closest_price == bid_price:
+                    # Increase the count if the price is on bid and reset the ask
+                    self.concurrent_bids = self.concurrent_bids + 1
+                    self.concurrent_asks = 0
+                    # marker to the current price if it match to bid
+                    lst_price[bid_index] = Color('{autored}' + '→ ' + str(bid_price) + '{/autored}')
+                else:
+                    lst_price[bid_index] = Color('{autored}' + str(bid_price) + '{/autored}')
             except IndexError:
                 pass
-        if ask_index:
+        if ask_index is not None:
             try:
-                lst_price[ask_index] = Color('{autored}' + str(ask_price) + '{/autored}')
-            except IndexError:
-                pass
-        if current_index:
-            try:
-                lst_price[current_index] = Color('{autoyellow}' + str(closest_price) + '{/autoyellow}')
+                if closest_price == ask_price:
+                    # Increase the count if the price is on ask and reset bid
+                    self.concurrent_asks = self.concurrent_asks + 1
+                    self.concurrent_bids = 0
+                    # marker to the current price if it match to ask
+                    lst_price[ask_index] = Color('{autogreen}' + '→ ' + str(ask_price) + '{/autogreen}')
+                else:
+                    lst_price[ask_index] = Color('{autogreen}' + str(ask_price) + '{/autogreen}')
             except IndexError:
                 pass
 
@@ -460,9 +474,14 @@ class TapeReader:
         table_data.insert(0, global_time_limit + ['price', 'on ask', 'on bid'])
 
         # Create table instance
-        table_instance = AsciiTable(table_data, f'****  {self.ticker}  ****')
+        concon_bids = Color('{autored}' + str(self.concurrent_bids) + '{/autored}')
+        concon_asks = Color('{autogreen}' + str(self.concurrent_asks) + '{/autogreen}')
+        table_instance = AsciiTable(table_data, f'{self.ticker}     BID: {concon_bids}      ASK: {concon_asks}')
         table_instance.inner_heading_row_border = False
         table_instance.inner_row_border = True
         table_instance.inner_column_border = False
-        table_instance.justify_columns = {0: 'center', 1: 'center', 2: 'center'}
+
+        # Align text for price column
+        time_length = len(global_time_limit)
+        table_instance.justify_columns = {time_length: 'right'}
         return table_instance.table

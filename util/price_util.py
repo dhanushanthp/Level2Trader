@@ -13,5 +13,5 @@ class PriceUtil:
         :param size:
         :return:
         """
-        num_slots = round(size/ self.slot_size)
+        num_slots = round(size / self.slot_size)
         return num_slots

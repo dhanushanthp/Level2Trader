@@ -39,3 +39,11 @@ class Config:
         :return:
         """
         return self.config.getint('TIME_SALES', 'max_time_ticks')
+
+    def get_refresh_rate(self):
+        """
+        Get the terminal refresh rate
+        :return:
+        """
+        return self.config.getint('TERMINAL', 'refresh_rate')
+
