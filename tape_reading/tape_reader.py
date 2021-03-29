@@ -260,6 +260,9 @@ class TapeReader:
         # Pick the sizes which are visible in the time frame
         last_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_last_size_on_bid[i].values() for i in global_time_limit])))
 
+        # Mean size transaction on bid
+        max_last_bid_size = np.mean(last_bid_sizes)
+
         # get the colour for each order size, Bearish Signal, RED color as main
         last_bid_colour_dictionary = self.get_colour_by_bearish(last_bid_sizes)
 
@@ -289,6 +292,10 @@ class TapeReader:
         # print(self.dict_last_size_on_ask)
         last_ask_sizes = sorted(
             set(itertools.chain.from_iterable([self.dict_last_size_on_ask[i].values() for i in global_time_limit])))
+
+        # Mean size transaction on bid
+        max_last_ask_size = np.mean(last_ask_sizes)
+
         ask_ask_sizes = sorted(
             set(itertools.chain.from_iterable([self.dict_ask_size_on_ask[i].values() for i in global_time_limit])))
 
@@ -348,7 +355,9 @@ class TapeReader:
             raise e
             pass
 
-        # New filtered price by range
+        # Find the average of sales on mean of bid and ask, Keep the block size consistanct across bid and ask to see the trend
+        self.histogram_block_size = round((max_last_bid_size + max_last_ask_size)/2)
+
         # Price on ask bullish
         ask_price_hist_agg = [round(ask_price_size_agg[i] / self.histogram_block_size) * color('↑', fore=(0, 255, 0), back=(0, 0, 0)) for i in
                               lst_price]
@@ -498,7 +507,7 @@ class TapeReader:
 
         # Create table instance
         table_instance = AsciiTable(table_data,
-                                    f'  {self.ticker}   Spread: {round(ask_price - bid_price, 2)} Histogram Blocks: {self.histogram_block_size}')
+                                    f'  {self.ticker}       Spread: {round(ask_price - bid_price, 2)}       H.Blocks: {self.histogram_block_size}')
         table_instance.inner_heading_row_border = False
         table_instance.inner_row_border = True
         table_instance.inner_column_border = False

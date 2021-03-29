@@ -33,3 +33,12 @@ Because those are completed trades.
 1. Some times the ask is less than bid price. and how that prints in terminal
     12.38AM in file 4. price at $5.92 
     12:46 same price
+   
+
+
+# Current Challenges
+1. The application will not work on high spreaad stocks. Such as spread more than 2C~3C
+
+
+# Notes
+1. Histogram block will change dynamically and reset every time the terminal clear the outputs.
