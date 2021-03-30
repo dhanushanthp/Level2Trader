@@ -352,8 +352,6 @@ class TapeReader:
                     ask_price_size_agg[p] = ps[p]
 
         # Balance the price range
-        # bid_index = None
-        # ask_index = None
         lst_price = sorted(set(last_bid_prices + ask_lst_price + bid_bid_lst_price + ask_ask_lst_price), reverse=True)
 
         try:
@@ -378,8 +376,12 @@ class TapeReader:
             pass
 
         # Select the top size on bid and ask based on the current price range
-        top_sales_on_ask_list = [numerize(self.top_sales_on_ask[i]) if i in self.top_sales_on_ask else '' for i in lst_price]
-        top_sales_on_bid_list = [numerize(self.top_sales_on_bid[i]) if i in self.top_sales_on_bid else '' for i in lst_price]
+        top_sales_on_ask_list = [color(numerize(self.top_sales_on_ask[i]), fore=(0, 255, 0), back=(0, 0, 0)) if i in self.top_sales_on_ask else '' for
+                                 i in lst_price]
+
+        top_sales_on_bid_list = [color(numerize(self.top_sales_on_bid[i]), fore=(255, 99, 92), back=(0, 0, 0)) if i in self.top_sales_on_bid else ''
+                                 for
+                                 i in lst_price]
 
         # Find the average of sales on mean of bid and ask, Keep the block size consistanct across bid and ask to see the trend
         self.histogram_block_size = round((max_last_bid_size + max_last_ask_size) / 2)
@@ -525,12 +527,16 @@ class TapeReader:
 
         # Add price and time accordingly as header and index
         table_data.append(lst_price)
-        table_data.append(ask_price_hist_agg)
+        table_data.append(top_sales_on_bid_list)
         table_data.append(top_sales_on_ask_list)
         table_data.append(bid_price_hist_agg)
-        table_data.append(top_sales_on_bid_list)
+        table_data.append(ask_price_hist_agg)
         table_data = list(map(list, zip(*table_data)))
-        table_data.insert(0, global_time_limit + ['Price', concon_asks, 'Top Ask', concon_bids, 'Top Bid'])
+        table_data.insert(0, global_time_limit + ['Price',
+                                                  color('Top Bid', fore=(255, 99, 92), back=(0, 0, 0)),
+                                                  color('Top Ask', fore=(0, 255, 0), back=(0, 0, 0)),
+                                                  concon_bids,
+                                                  concon_asks])
 
         # Create table instance
         table_instance = AsciiTable(table_data,
@@ -541,7 +547,5 @@ class TapeReader:
 
         # Align text for price column
         time_length = len(global_time_limit)
-        table_instance.justify_columns = {time_length: 'right'}
-        # print(self.top_sales_on_ask)
-        # print(self.top_sales_on_bid)
+        table_instance.justify_columns = {time_length: 'right', time_length + 1: 'center', time_length + 2: 'center', time_length + 3: 'right'}
         return table_instance.table
