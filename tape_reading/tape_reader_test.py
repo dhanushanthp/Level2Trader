@@ -1,14 +1,12 @@
 from tape_reading.tape_reader import TapeReader
 import time
 
-file1 = open('test_data/bid_ask_last.csv', 'r')
+file1 = open('test_data/2021033119_PRPH.csv', 'r')
 lines = file1.readlines()
-lines = lines[1:]
 
-time_sale_obj = TapeReader(ticker='TESTING')
+time_sale_obj = TapeReader(ticker='TEST', data_writer=False)
 
 for line in lines:
-    time.sleep(.1)
     # Select individual price and size by the feed
     line_split = line.split(',')
     tick_time = line_split[0].split(' ')[-1]
@@ -18,4 +16,11 @@ for line in lines:
     ask_size = int(line_split[4])
     last_price = float(line_split[5])
     last_size = int(line_split[6])
-    time_sale_obj.data_generator(tick_time, bid_price, bid_size, ask_price, ask_size, last_price, last_size)
+    call_src = str(line_split[7]).replace('\n', '')
+
+    if call_src == 'l2':
+        # Call L2
+        time_sale_obj.level_ii_api_call(tick_time, bid_price, bid_size, ask_price, ask_size, last_price, last_size)
+    else:
+        time_sale_obj.time_sales_api_call(tick_time, bid_price, bid_size, ask_price, ask_size, last_price, last_size)
+    time.sleep(0.1)

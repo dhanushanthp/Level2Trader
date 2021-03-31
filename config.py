@@ -50,3 +50,10 @@ class Config:
         """
         return self.config.getint('TERMINAL', 'refresh_rate')
 
+    def get_can_write_data(self):
+        """
+        Enable write the data to file
+        :return:
+        """
+        return self.config.getboolean('DATA', 'write_data')
+
