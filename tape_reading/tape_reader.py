@@ -538,9 +538,11 @@ class TapeReader:
                                                   concon_bids,
                                                   concon_asks])
 
+        # Prince Description
+        print(f'  {self.ticker}       Spread: {round(ask_price - bid_price, 2)}       H.Blocks: {self.histogram_block_size}')
+
         # Create table instance
-        table_instance = AsciiTable(table_data,
-                                    f'  {self.ticker}       Spread: {round(ask_price - bid_price, 2)}       H.Blocks: {self.histogram_block_size}')
+        table_instance = AsciiTable(table_data)
         table_instance.inner_heading_row_border = False
         table_instance.inner_row_border = True
         table_instance.inner_column_border = False
