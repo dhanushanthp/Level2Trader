@@ -113,6 +113,54 @@ class TapeReader:
         """
         return min([bid, ask], key=lambda x: abs(x - last))
 
+    def find_top_sales(self, ask_price, bid_price, closest_price, last_size):
+        """
+        Keep track of price on BID w.r.t highest size
+        """
+        if closest_price == bid_price:
+            if closest_price in self.top_sales_on_bid:
+                if self.top_sales_on_bid[closest_price] < last_size:
+                    self.top_sales_on_bid[closest_price] = self.pu.round_size(last_size)
+            else:
+                self.top_sales_on_bid[closest_price] = self.pu.round_size(last_size)
+        """
+        Keep track of price on ASK w.r.t highest size
+        """
+        if closest_price == ask_price:
+            if closest_price in self.top_sales_on_ask:
+                if self.top_sales_on_ask[closest_price] < last_size:
+                    self.top_sales_on_ask[closest_price] = self.pu.round_size(last_size)
+            else:
+                self.top_sales_on_ask[closest_price] = self.pu.round_size(last_size)
+
+    def level_ii_bids_asks(self, ask_price, ask_size, bid_price, bid_size, tick_time):
+        """
+        BID size w.r.t BID price
+        Collect bid price regardless of last price.
+        """
+        if tick_time in self.dict_bid_size_on_bid:
+            # If time already exist in dictionary, Regardless of last price UPDATE the CURRENT bid price and size
+            self.dict_bid_size_on_bid[tick_time][bid_price] = bid_size
+        else:
+            # New element creation with time, price and size
+            value_dict = dict()
+            value_dict[bid_price] = bid_size
+            # Create time dictionary with value
+            self.dict_bid_size_on_bid[tick_time] = value_dict
+        """
+        ASK size w.r.t ASK
+        Collect ask price regardless of last price.
+        """
+        if tick_time in self.dict_ask_size_on_ask:
+            # If time already exist in dictionary, Regardless of last price UPDATE the CURRENT the ask price and size
+            self.dict_ask_size_on_ask[tick_time][ask_price] = ask_size
+        else:
+            # New element creation with time, price and size
+            value_dict = dict()
+            value_dict[ask_price] = ask_size
+            # Create time dictionary with value
+            self.dict_ask_size_on_ask[tick_time] = value_dict
+
     def data_dictionary_generator(self, tick_time: str, bid_price: float, bid_size: int, ask_price: float, ask_size: int, closest_price: float,
                                   last_size: int):
         """
@@ -128,53 +176,9 @@ class TapeReader:
         :return:
         """
 
-        """
-        Keep track of price on BID w.r.t highest size
-        """
-        if closest_price == bid_price:
-            if closest_price in self.top_sales_on_bid:
-                if self.top_sales_on_bid[closest_price] < last_size:
-                    self.top_sales_on_bid[closest_price] = self.pu.round_size(last_size)
-            else:
-                self.top_sales_on_bid[closest_price] = self.pu.round_size(last_size)
+        self.find_top_sales(ask_price, bid_price, closest_price, last_size)
 
-        """
-        Keep track of price on ASK w.r.t highest size
-        """
-        if closest_price == ask_price:
-            if closest_price in self.top_sales_on_ask:
-                if self.top_sales_on_ask[closest_price] < last_size:
-                    self.top_sales_on_ask[closest_price] = self.pu.round_size(last_size)
-            else:
-                self.top_sales_on_ask[closest_price] = self.pu.round_size(last_size)
-
-        """
-        BID size w.r.t BID price
-        Collect bid price regardless of last price.
-        """
-        if tick_time in self.dict_bid_size_on_bid:
-            # If time already exist in dictionary, Regardless of last price UPDATE the CURRENT bid price and size
-            self.dict_bid_size_on_bid[tick_time][bid_price] = bid_size
-        else:
-            # New element creation with time, price and size
-            value_dict = dict()
-            value_dict[bid_price] = bid_size
-            # Create time dictionary with value
-            self.dict_bid_size_on_bid[tick_time] = value_dict
-
-        """
-        ASK size w.r.t ASK
-        Collect ask price regardless of last price.
-        """
-        if tick_time in self.dict_ask_size_on_ask:
-            # If time already exist in dictionary, Regardless of last price UPDATE the CURRENT the ask price and size
-            self.dict_ask_size_on_ask[tick_time][ask_price] = ask_size
-        else:
-            # New element creation with time, price and size
-            value_dict = dict()
-            value_dict[ask_price] = ask_size
-            # Create time dictionary with value
-            self.dict_ask_size_on_ask[tick_time] = value_dict
+        self.level_ii_bids_asks(ask_price, ask_size, bid_price, bid_size, tick_time)
 
         """
         Time based accumulator dictionary is a dictionary of, dictionary data structure. 
