@@ -1,44 +1,48 @@
-# BID and ASK 
-The bid and ask should not be aggregated. Because those are not executed trades.
-It's just display as a flash values. On other hand the last data should be aggregared
-Because those are completed trades.
+# BID and ASK  VS Last
+The bid and ask should not be aggregated. Because those are not executed trades. It's just display as a flash values. On other hand the last data 
+should be aggregated. Because those are completed trades.
 
 # Check List
-1. Why some time delay between tws and api
-    a. after changing the terminal clearing to 100, the delay reduced
+1. Why some time delay between tws and API
+   > **Question** After changing the terminal clearing to 100, the delay reduced<br>
+   > **Answer** 100 also lagging at market opening. So changed to 50. So the delay is moved. If we have further delay
+   > then we will reduce the refresh rate.
 2. If there is no delay, Is the values compare to tws is almost same match as the terminal values.
     1. Last on BID
     2. Last on ASK
     3. BID
     4. ASK
     5. Relevant sizes
-3. Price Range: Works better without price range.
+
+3. Price Range: 
+   > Works better without price range.
+
 4. Check the tool on bigger price stocks - AAPL
-5. fix color code for size values rather by auto range
-    1. Find the fixed range of sizes based on the stock movement
     
 6. How to properly close the connection
+    > The version update of api fix the peer connection error. So temp fix works
 
 # Experiment
-1. What ist he block size
+1. What is the block size?
+    > 100s works better also this was kind of an default values in trading platforms
 2. Time frame (20s, 15s, 10s)
-3. What is the perfect size for histogram.
+   > 10S works best, even in market open timings
+3. What is the perfect size for a histogram.
     a. using 10K is very high, at the same time this is could be proposanal to time frame. If we increase the time frame then the histogram size should be increased to 
     handle the screen size
-    b. 20s is too much. Should be around 10 to 15 sec. 
+    > The block size has been decided dynamically by taking mean of size in sales on bid and sales on ask then average of both, <br>
+    > bid_size = `[1,2,3,4,5]` -> mean=3 <br>
+    > ask_size = `[2,3,10,2,3]` -> mean=4 <br>
+    > block size = `(3+4)/2` = 3.5 
     
     
     
 # Questions or doubts
-1. Some times the ask is less than bid price. and how that prints in terminal
+1. Some times the ask is less than bid price. And how that prints in terminal
     12.38AM in file 4. price at $5.92 
     12:46 same price
    
 
 
 # Current Challenges
-1. The application will not work on high spreaad stocks. Such as spread more than 2C~3C
-
-
-# Notes
-1. Histogram block will change dynamically and reset every time the terminal clear the outputs.
+1. The application will not work on high spread stocks. Such as spread more than 2C~3C
