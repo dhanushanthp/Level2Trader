@@ -1,7 +1,7 @@
 from tape_reading.tape_reader import TapeReader
 import time
 
-file1 = open('test_data/2021033119_PRPH.csv', 'r')
+file1 = open('test_data/2021033122_YVR.csv', 'r')
 lines = file1.readlines()
 
 time_sale_obj = TapeReader(ticker='TEST', data_writer=False)
@@ -23,4 +23,4 @@ for line in lines:
         time_sale_obj.level_ii_api_call(tick_time, bid_price, bid_size, ask_price, ask_size, last_price, last_size)
     else:
         time_sale_obj.time_sales_api_call(tick_time, bid_price, bid_size, ask_price, ask_size, last_price, last_size)
-    time.sleep(0.1)
+    # time.sleep(0)

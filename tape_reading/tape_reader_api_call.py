@@ -5,17 +5,25 @@ from ibapi.client import TickAttribLast, TickerId, TickAttribBidAsk
 import sys
 import datetime
 from tape_reading.tape_reader import TapeReader
+from config import Config
 
 
 class IBapi(EWrapper, EClient):
     def __init__(self, ticker):
+        """
+        The table will be updated with time and sales last function and level II bid and ask function. Since the functions are asynchronous calls
+        we need to update values in both places with the same object
+        :param ticker:
+        """
         EClient.__init__(self, self)
-        self.time_and_sales = TapeReader(ticker=ticker)
+        config = Config()
+        self.time_and_sales = TapeReader(ticker=ticker, data_writer=config.get_can_write_data())
         self.data = []  # Initialize variable to store candle
-        self.bid = None
-        self.ask = None
-        self.bid_size = None
-        self.ask_size = None
+        self.bid = 0
+        self.ask = 0
+        self.bid_size = 0
+        self.ask_size = 0
+        self.last = 0
 
     def error(self, reqId: TickerId, errorCode: int, errorString: str):
         print(f"{reqId}, {errorCode}, {errorString}")
@@ -35,19 +43,25 @@ class IBapi(EWrapper, EClient):
         :return:
         """
         super().tickByTickAllLast(reqId, tickType, ticktime, price, size, tickAtrribLast, exchange, specialConditions)
+        self.last = price
 
         if tickType == 1:
-            # Once the level II is available
-            if self.bid:
-                self.time_and_sales.data_generator(datetime.datetime.fromtimestamp(ticktime).strftime("%H:%M:%S"), self.bid, self.bid_size, self.ask,
-                                                   self.ask_size, price, size)
+            """
+            Cases to tackle
+            1. last function get called before bid and ask
+            2. At the same time the level II data is not available
+            """
+            # TODO add the level II time stamp in below condition, If both time stamp match then process data
+            if (self.bid != 0) and (self.ask != 0):
+                self.time_and_sales.time_sales_api_call(datetime.datetime.fromtimestamp(ticktime).strftime("%H:%M:%S"), self.bid, self.bid_size,
+                                                        self.ask, self.ask_size, price, size)
 
-    def tickByTickBidAsk(self, reqId: int, time: int, bidPrice: float, askPrice: float, bidSize: int, askSize: int,
+    def tickByTickBidAsk(self, reqId: int, ticktime: int, bidPrice: float, askPrice: float, bidSize: int, askSize: int,
                          tickAttribBidAsk: TickAttribBidAsk):
         """
         Update the bid and ask price when ever the function triggered
         :param reqId:
-        :param time:
+        :param ticktime:
         :param bidPrice:
         :param askPrice:
         :param bidSize:
@@ -56,7 +70,7 @@ class IBapi(EWrapper, EClient):
         :return:
         """
 
-        super().tickByTickBidAsk(reqId, time, bidPrice, askPrice, bidSize, askSize, tickAttribBidAsk)
+        super().tickByTickBidAsk(reqId, ticktime, bidPrice, askPrice, bidSize, askSize, tickAttribBidAsk)
         """
         Update bid and ask, Since the bid and ask is not a frequent call. we need to keep the bid and ask in class
         level and update when ever the bid and ask api triggered.
@@ -65,6 +79,16 @@ class IBapi(EWrapper, EClient):
         self.ask = askPrice
         self.bid_size = bidSize
         self.ask_size = askSize
+
+        """
+        Cases to tackle
+        1. bid and ask function get called before last
+        2. At the same time the time and sales data is not available
+        3. The last size will be 0. Because at level II update the time and sales won't get updated
+        """
+        if self.last != 0:
+            self.time_and_sales.level_ii_api_call(datetime.datetime.fromtimestamp(ticktime).strftime("%H:%M:%S"), self.bid, self.bid_size,
+                                                  self.ask, self.ask_size, self.last, 0)
 
 
 def main():
@@ -88,8 +112,6 @@ def main():
     # app.disconnect()
     # app.cancelTickByTickData(1008)
     app.run()
-
-
 
 
 main()
