@@ -67,6 +67,10 @@ class TapeReader:
 
         self.data_writer = data_writer
 
+        # Track previous bid and ask prices.
+        self.previous_bid_price = 0
+        self.previous_ask_price = 0
+
     def get_colour_by_bullish(self, sizes: list) -> dict:
         """
         Generate color shades w.r.t range of size
@@ -116,6 +120,11 @@ class TapeReader:
     def find_top_sales(self, ask_price, bid_price, closest_price, last_size):
         """
         Keep track of price on BID w.r.t highest size
+        :param ask_price:
+        :param bid_price:
+        :param closest_price:
+        :param last_size:
+        :return:
         """
         if closest_price == bid_price:
             if closest_price in self.top_sales_on_bid:
@@ -135,31 +144,58 @@ class TapeReader:
 
     def level_ii_bids_asks(self, ask_price, ask_size, bid_price, bid_size, tick_time):
         """
+        This is one of the critical task. Because we need to track the previous bid and ask price as well to check whether the price is holding or not
+
+        :param tick_time: Time of ticker
+        :param bid_price: bid price, level II first tier only
+        :param bid_size: bid size, level II first tier only
+        :param ask_price: ask price, level II first tier only
+        :param ask_size: ask size, level II first tier only
+        :return:
+        """
+
+        """
         BID size w.r.t BID price
-        Collect bid price regardless of last price.
+        Collect bid price regardless of last executed price. If time already exist in dictionary, Regardless of last price UPDATE the CURRENT 
+        bid price and size
         """
         if tick_time in self.dict_bid_size_on_bid:
-            # If time already exist in dictionary, Regardless of last price UPDATE the CURRENT bid price and size
-            self.dict_bid_size_on_bid[tick_time][bid_price] = bid_size
+            """    
+            Update the previous bid size, if it's not holding. If we don't do this, then in table the price will shows as holding
+            """
+            if self.previous_bid_price == bid_price:
+                self.dict_bid_size_on_bid[tick_time][bid_price] = bid_size
+            else:
+                if self.previous_bid_price != 0:
+                    # If the previous price is not holding the bid
+                    self.dict_bid_size_on_bid[tick_time][self.previous_bid_price] = 0
         else:
-            # New element creation with time, price and size
-            value_dict = dict()
-            value_dict[bid_price] = bid_size
-            # Create time dictionary with value
-            self.dict_bid_size_on_bid[tick_time] = value_dict
+            # Current new bid price and size
+            self.dict_bid_size_on_bid[tick_time] = {bid_price: bid_size}
+
+        # Track current bid price for the next iteration as previous bid price
+        self.previous_bid_price = bid_price
+
         """
         ASK size w.r.t ASK
         Collect ask price regardless of last price.
         """
         if tick_time in self.dict_ask_size_on_ask:
-            # If time already exist in dictionary, Regardless of last price UPDATE the CURRENT the ask price and size
-            self.dict_ask_size_on_ask[tick_time][ask_price] = ask_size
+            """    
+            Update the previous ask size, if it's not holding. If we don't do this, then in table the price will shows as holding
+            """
+            if self.previous_ask_price == ask_price:
+                self.dict_ask_size_on_ask[tick_time][ask_price] = ask_size
+            else:
+                if self.previous_ask_price != 0:
+                    # If the previous price is not holding the ask
+                    self.dict_ask_size_on_ask[tick_time][self.previous_ask_price] = 0
         else:
-            # New element creation with time, price and size
-            value_dict = dict()
-            value_dict[ask_price] = ask_size
-            # Create time dictionary with value
-            self.dict_ask_size_on_ask[tick_time] = value_dict
+            # Current new ask price and size
+            self.dict_ask_size_on_ask[tick_time] = {ask_price: ask_size}
+
+        # Track current ask price for the next iteration as previous ask price
+        self.previous_ask_price = ask_price
 
     def data_dictionary_generator(self, tick_time: str, bid_price: float, bid_size: int, ask_price: float, ask_size: int, closest_price: float,
                                   last_size: int):
@@ -197,17 +233,19 @@ class TapeReader:
                 # If the close price is not already created from time and sales API call, If already exist, Not need to worry
                 if closest_price in self.dict_last_size_on_bid[tick_time]:
                     # Sales on bid, If the call is from Level II then the last size will be 0
-                    self.dict_last_size_on_bid[tick_time][closest_price] = self.dict_last_size_on_bid[tick_time][closest_price] + last_size
+                    self.dict_last_size_on_bid[tick_time][bid_price] = self.dict_last_size_on_bid[tick_time][bid_price] + last_size
                 else:
-                    self.dict_last_size_on_bid[tick_time][closest_price] = last_size
+                    self.dict_last_size_on_bid[tick_time][bid_price] = last_size
             else:
-                # Dummy bid price entry
-                self.dict_last_size_on_bid[tick_time][bid_price] = 0
+                if bid_price not in self.dict_last_size_on_bid[tick_time]:
+                    # Dummy bid price entry based on level II
+                    self.dict_last_size_on_bid[tick_time][bid_price] = 0
 
-            # Dummy ask price in "dict_last_size_on_ask" dictionary, Because the the price is on bid
-            self.dict_last_size_on_bid[tick_time][ask_price] = 0
+            if ask_price not in self.dict_last_size_on_bid[tick_time]:
+                # Dummy ask price in "dict_last_size_on_bid" dictionary, Because the the price is on bid
+                self.dict_last_size_on_bid[tick_time][ask_price] = 0
         else:
-            # If tick time not exist
+            # If tick time not exist, Create entry for bid and dummy for price on ask
             if closest_price == bid_price:
                 self.dict_last_size_on_bid[tick_time] = {bid_price: last_size, ask_price: 0}
             else:
@@ -225,15 +263,17 @@ class TapeReader:
                 # If the close price is not already created from time and sales API call, If already exist, Not need to worry
                 if closest_price in self.dict_last_size_on_ask[tick_time]:
                     # Sales on ask
-                    self.dict_last_size_on_ask[tick_time][closest_price] = self.dict_last_size_on_ask[tick_time][closest_price] + last_size
+                    self.dict_last_size_on_ask[tick_time][ask_price] = self.dict_last_size_on_ask[tick_time][ask_price] + last_size
                 else:
-                    self.dict_last_size_on_ask[tick_time][closest_price] = last_size
+                    self.dict_last_size_on_ask[tick_time][ask_price] = last_size
             else:
                 # Which is bid price, Where we shold have entry on "dict_last_size_on_bid" dictionary
-                self.dict_last_size_on_ask[tick_time][ask_price] = 0
+                if ask_price not in self.dict_last_size_on_ask[tick_time]:
+                    self.dict_last_size_on_ask[tick_time][ask_price] = 0
 
-            # Dummy bid price entry
-            self.dict_last_size_on_ask[tick_time][bid_price] = 0
+            if bid_price not in self.dict_last_size_on_ask[tick_time]:
+                # Dummy bid price in "dict_last_size_on_ask" dictionary, Because the the price is on ask
+                self.dict_last_size_on_ask[tick_time][bid_price] = 0
 
         else:
             # If tick time not exist
@@ -386,26 +426,26 @@ class TapeReader:
             list((set(itertools.chain.from_iterable([list(self.dict_ask_size_on_ask[i].keys()) for i in global_time_limit])))), reverse=True)
 
         # Price histogram generation
-        bid_price_size = [self.dict_last_size_on_bid[i] for i in global_time_limit]  # Price on Bid, Bearish Signal
-        ask_price_size = [self.dict_last_size_on_ask[i] for i in global_time_limit]  # Price on Ask, Bullish Signal
+        list_last_bid_price_size_dict = [self.dict_last_size_on_bid[i] for i in global_time_limit]  # Price on Bid, Bearish Signal
+        list_last_ask_price_size_dict = [self.dict_last_size_on_ask[i] for i in global_time_limit]  # Price on Ask, Bullish Signal
 
         # Aggregate the size on BIDs
         bid_price_size_agg = dict()
-        for ps in bid_price_size:
-            for p in ps.keys():
-                if p in bid_price_size_agg:
-                    bid_price_size_agg[p] = bid_price_size_agg[p] + ps[p]
+        for price_size in list_last_bid_price_size_dict:
+            for var_price in price_size.keys():
+                if var_price in bid_price_size_agg:
+                    bid_price_size_agg[var_price] = bid_price_size_agg[var_price] + price_size[var_price]
                 else:
-                    bid_price_size_agg[p] = ps[p]
+                    bid_price_size_agg[var_price] = price_size[var_price]
 
         # Aggregate the size on ASKs
         ask_price_size_agg = dict()
-        for ps in ask_price_size:
-            for p in ps.keys():
-                if p in ask_price_size_agg:
-                    ask_price_size_agg[p] = ask_price_size_agg[p] + ps[p]
+        for price_size in list_last_ask_price_size_dict:
+            for var_price in price_size.keys():
+                if var_price in ask_price_size_agg:
+                    ask_price_size_agg[var_price] = ask_price_size_agg[var_price] + price_size[var_price]
                 else:
-                    ask_price_size_agg[p] = ps[p]
+                    ask_price_size_agg[var_price] = price_size[var_price]
 
         # Balance the price range
         global_price_limit = sorted(set(last_bid_prices + ask_lst_price + bid_bid_lst_price + ask_ask_lst_price), reverse=True)

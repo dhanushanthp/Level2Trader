@@ -33,7 +33,9 @@ should be aggregated. Because those are completed trades.
     > The block size has been decided dynamically by taking mean of size in sales on bid and sales on ask then average of both, <br>
     > bid_size = `[1,2,3,4,5]` -> mean=3 <br>
     > ask_size = `[2,3,10,2,3]` -> mean=4 <br>
-    > block size = `(3+4)/2` = 3.5 
+    > block size = `(3+4)/2` = 3.5
+   
+4. Round the size using price util function #TODO
     
     
     
