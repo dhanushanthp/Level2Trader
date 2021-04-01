@@ -74,6 +74,9 @@ class TapeReader:
         self.previous_bid_price = 0
         self.previous_ask_price = 0
 
+        # Track the previous time to print every second
+        self.previous_time = None
+
     def get_colour_by_bullish(self, sizes: list) -> dict:
         """
         Generate color shades w.r.t range of size
@@ -203,8 +206,7 @@ class TapeReader:
     def data_dictionary_generator(self, tick_time: str, bid_price: float, bid_size: int, ask_price: float, ask_size: int, closest_price: float,
                                   last_size: int):
         """
-        Update level II details
-        CAUTION: Should not have any aggregation logics in this function. Since this get called during the level II API call as well
+        This function will udpate the values in dictionary regardless of 1sec table print on terminal.
         :param tick_time: Time of ticker
         :param bid_price: bid price, level II first tier only
         :param bid_size: bid size, level II first tier only
@@ -285,7 +287,11 @@ class TapeReader:
             else:
                 self.dict_last_size_on_ask[tick_time] = {ask_price: 0, bid_price: 0}
 
-        # Call function to generate table, Refresh rate of terminal
+    def clear_terminal(self):
+        """
+        Clear terminal
+        :return:
+        """
         self.clear_counter = self.clear_counter + 1
         if self.clear_counter == self.config.get_refresh_rate():
             # Clear each 2 min
@@ -317,6 +323,10 @@ class TapeReader:
         :return: None, Show table in terminal
         """
 
+        if self.previous_time is None:
+            # Set current time as previous time if it's none
+            self.previous_time = tick_time
+
         # Write data to file
         if self.data_writer:
             with open(f'test_data/{self.DATE}_{self.ticker_name}.csv', 'a') as file_writer:
@@ -329,7 +339,9 @@ class TapeReader:
         self.data_dictionary_generator(tick_time, bid_price, bid_size, ask_price, ask_size, closest_price, last_size)
 
         # Don't initiate the print until we get the api call in last to update the dictionary
-        if (bool(self.dict_last_size_on_ask)) and (bool(self.dict_last_size_on_bid)):
+        if (bool(self.dict_last_size_on_ask)) and (bool(self.dict_last_size_on_bid)) and (self.previous_time != tick_time):
+            self.previous_time = tick_time
+            self.clear_terminal()
             print(self.display_data(closest_price, bid_price, ask_price, 'L2') + '\n\n\n\n')
 
     def time_sales_api_call(self, tick_time: str, bid_price, bid_size, ask_price, ask_size, last_price, last_size):
@@ -345,6 +357,8 @@ class TapeReader:
         :param last_size: last size, time & sales
         :return: :return: None, Show table in terminal
         """
+        if self.previous_time is None:
+            self.previous_time = tick_time
 
         # Find the closest price w.r.t to last price on bid or ask
         closest_price = self.find_closest(bid_price, ask_price, last_price)
@@ -356,7 +370,10 @@ class TapeReader:
 
         self.data_dictionary_generator(tick_time, bid_price, bid_size, ask_price, ask_size, closest_price, last_size)
 
-        print(self.display_data(closest_price, bid_price, ask_price, 'T&S') + '\n\n\n\n')
+        if self.previous_time != tick_time:
+            self.previous_time = tick_time
+            self.clear_terminal()
+            print(self.display_data(closest_price, bid_price, ask_price, 'T&S') + '\n\n\n\n')
 
     def top_sales_histogram(self, global_price_limit):
         """
