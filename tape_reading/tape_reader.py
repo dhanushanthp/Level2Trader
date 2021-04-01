@@ -50,6 +50,9 @@ class TapeReader:
         # Most hit price on bids, Bearish within the price range
         self.top_sales_on_bid = dict()
 
+        # Default 100
+        self.top_sales_block_size = 100
+
         # Ticker by each second, So the size aggregation will be done by seconds
         self.ticker_name = ticker
 
@@ -355,6 +358,72 @@ class TapeReader:
 
         print(self.display_data(closest_price, bid_price, ask_price, 'T&S') + '\n\n\n\n')
 
+    def top_sales_histogram(self, global_price_limit):
+        """
+        Generate histogram for top sales
+        :param global_price_limit:
+        :return:
+        """
+        top_sales_on_ask_list = [self.top_sales_on_ask[i] if i in self.top_sales_on_ask else 0 for i in global_price_limit]
+        top_sales_on_bid_list = [self.top_sales_on_bid[i] if i in self.top_sales_on_bid else 0 for i in global_price_limit]
+        # Find the mean from top bid and ask sizes
+        self.top_sales_block_size = int(max(self.pu.round_size((np.mean(top_sales_on_bid_list) + np.mean(top_sales_on_ask_list)) / 2), 100))
+        # Top sales on ask
+        top_sales_on_ask_hist = [round(i / self.top_sales_block_size) * color('↑', fore=(0, 255, 0), back=(0, 0, 0)) for i in top_sales_on_ask_list]
+        # Top sales on bid
+        top_sales_on_bid_hist = [round(i / self.top_sales_block_size) * color('↓', fore=(255, 0, 0), back=(0, 0, 0)) for i in top_sales_on_bid_list]
+        return top_sales_on_ask_hist, top_sales_on_bid_hist
+
+    def time_and_sales_histogram(self, global_price_limit, global_time_limit, last_ask_sizes, last_bid_sizes):
+        """
+        Generate histogram by aggregating sizes of sales on bid and aks withen the given time frame
+        :param global_price_limit:
+        :param global_time_limit:
+        :param last_ask_sizes:
+        :param last_bid_sizes:
+        :return:
+        """
+        # Price histogram generation
+        list_last_bid_price_size_dict = [self.dict_last_size_on_bid[i] for i in global_time_limit]  # Price on Bid, Bearish Signal
+        list_last_ask_price_size_dict = [self.dict_last_size_on_ask[i] for i in global_time_limit]  # Price on Ask, Bullish Signal
+
+        # Aggregate the size on BIDs
+        bid_price_size_agg = dict()
+        for price_size in list_last_bid_price_size_dict:
+            for var_price in price_size.keys():
+                if var_price in bid_price_size_agg:
+                    bid_price_size_agg[var_price] = bid_price_size_agg[var_price] + price_size[var_price]
+                else:
+                    bid_price_size_agg[var_price] = price_size[var_price]
+
+        # Aggregate the size on ASKs
+        ask_price_size_agg = dict()
+        for price_size in list_last_ask_price_size_dict:
+            for var_price in price_size.keys():
+                if var_price in ask_price_size_agg:
+                    ask_price_size_agg[var_price] = ask_price_size_agg[var_price] + price_size[var_price]
+                else:
+                    ask_price_size_agg[var_price] = price_size[var_price]
+
+        # Mean size transaction on bid
+        max_last_bid_size = np.mean(last_bid_sizes)
+
+        # Mean size transaction on bid
+        max_last_ask_size = np.mean(last_ask_sizes)
+
+        # Find the average of sales on mean of bid and ask, Keep the block size consistent across bid and ask to see the trend and round to 100's
+        self.histogram_block_size = int(max(self.pu.round_size((max_last_bid_size + max_last_ask_size) / 2), 100))
+
+        # Price on ask bullish
+        ask_price_hist_agg = [round(ask_price_size_agg[i] / self.histogram_block_size) * color('↑', fore=(0, 255, 0), back=(0, 0, 0)) for i in
+                              global_price_limit]
+
+        # Price on bid bearish
+        bid_price_hist_agg = [round(bid_price_size_agg[i] / self.histogram_block_size) * color('↓', fore=(255, 0, 0), back=(0, 0, 0)) for i in
+                              global_price_limit]
+
+        return ask_price_hist_agg, bid_price_hist_agg
+
     def display_data(self, closest_price: float, bid_price: float, ask_price: float, source: str):
         """
         Generate table for terminal outputs
@@ -381,9 +450,6 @@ class TapeReader:
         # All the sizes on bid within the time limit and and sorted
         last_bid_sizes = sorted(set(itertools.chain.from_iterable([self.dict_last_size_on_bid[i].values() for i in global_time_limit])))
 
-        # Mean size transaction on bid
-        max_last_bid_size = np.mean(last_bid_sizes)
-
         # Colour for each order size, Bearish Signal, RED on high volume
         last_bid_colour_dictionary = self.get_colour_by_bearish(last_bid_sizes)
 
@@ -408,9 +474,6 @@ class TapeReader:
         # All the sizes on ask within the time limit and and sorted
         last_ask_sizes = sorted(set(itertools.chain.from_iterable([self.dict_last_size_on_ask[i].values() for i in global_time_limit])))
 
-        # Mean size transaction on bid
-        max_last_ask_size = np.mean(last_ask_sizes)
-
         ask_ask_sizes = sorted(
             set(itertools.chain.from_iterable([self.dict_ask_size_on_ask[i].values() for i in global_time_limit])))
 
@@ -424,28 +487,6 @@ class TapeReader:
         # All the ask calls within the time limit and reverse high to low
         ask_ask_lst_price = sorted(
             list((set(itertools.chain.from_iterable([list(self.dict_ask_size_on_ask[i].keys()) for i in global_time_limit])))), reverse=True)
-
-        # Price histogram generation
-        list_last_bid_price_size_dict = [self.dict_last_size_on_bid[i] for i in global_time_limit]  # Price on Bid, Bearish Signal
-        list_last_ask_price_size_dict = [self.dict_last_size_on_ask[i] for i in global_time_limit]  # Price on Ask, Bullish Signal
-
-        # Aggregate the size on BIDs
-        bid_price_size_agg = dict()
-        for price_size in list_last_bid_price_size_dict:
-            for var_price in price_size.keys():
-                if var_price in bid_price_size_agg:
-                    bid_price_size_agg[var_price] = bid_price_size_agg[var_price] + price_size[var_price]
-                else:
-                    bid_price_size_agg[var_price] = price_size[var_price]
-
-        # Aggregate the size on ASKs
-        ask_price_size_agg = dict()
-        for price_size in list_last_ask_price_size_dict:
-            for var_price in price_size.keys():
-                if var_price in ask_price_size_agg:
-                    ask_price_size_agg[var_price] = ask_price_size_agg[var_price] + price_size[var_price]
-                else:
-                    ask_price_size_agg[var_price] = price_size[var_price]
 
         # Balance the price range
         global_price_limit = sorted(set(last_bid_prices + ask_lst_price + bid_bid_lst_price + ask_ask_lst_price), reverse=True)
@@ -474,23 +515,11 @@ class TapeReader:
             # raise e
             pass
 
-        # Select the top size on bid and ask based on the current price range
-        top_sales_on_ask_list = [color(numerize(self.top_sales_on_ask[i]), fore=(0, 255, 0), back=(0, 0, 0)) if i in self.top_sales_on_ask else '' for
-                                 i in global_price_limit]
+        # Generate top sales histogram data
+        top_sales_on_ask_hist, top_sales_on_bid_hist = self.top_sales_histogram(global_price_limit)
 
-        top_sales_on_bid_list = [color(numerize(self.top_sales_on_bid[i]), fore=(255, 99, 92), back=(0, 0, 0)) if i in self.top_sales_on_bid else ''
-                                 for
-                                 i in global_price_limit]
-
-        # Find the average of sales on mean of bid and ask, Keep the block size consistent across bid and ask to see the trend and round to 100's
-        self.histogram_block_size = int(max(self.pu.round_size((max_last_bid_size + max_last_ask_size) / 2), 100))
-
-        # Price on ask bullish
-        ask_price_hist_agg = [round(ask_price_size_agg[i] / self.histogram_block_size) * color('↑', fore=(0, 255, 0), back=(0, 0, 0)) for i in
-                              global_price_limit]
-        # Price on bid bearish
-        bid_price_hist_agg = [round(bid_price_size_agg[i] / self.histogram_block_size) * color('↓', fore=(255, 0, 0), back=(0, 0, 0)) for i in
-                              global_price_limit]
+        # Generate histogram data for sizes on bid and ask
+        ask_price_hist_agg, bid_price_hist_agg = self.time_and_sales_histogram(global_price_limit, global_time_limit, last_ask_sizes, last_bid_sizes)
 
         # Generate table
         table_data = []
@@ -623,19 +652,21 @@ class TapeReader:
 
         # Add price and time accordingly as header and index
         table_data.append(global_price_limit)
-        table_data.append(top_sales_on_bid_list)
-        table_data.append(top_sales_on_ask_list)
+        table_data.append(top_sales_on_bid_hist)
+        table_data.append(top_sales_on_ask_hist)
         table_data.append(bid_price_hist_agg)
         table_data.append(ask_price_hist_agg)
         table_data = list(map(list, zip(*table_data)))
         table_data.insert(0, global_time_limit + ['Price',
-                                                  color('Top Bid', fore=(255, 99, 92), back=(0, 0, 0)),
-                                                  color('Top Ask', fore=(0, 255, 0), back=(0, 0, 0)),
+                                                  color('Top on Bid', fore=(255, 99, 92), back=(0, 0, 0)),
+                                                  color('Top on Ask', fore=(0, 255, 0), back=(0, 0, 0)),
                                                   concon_bids,
                                                   concon_asks])
 
         # Prince Description
-        print(f'{source}      {self.ticker_name}       Spread: {round(ask_price - bid_price, 2)}       H.Blocks: {self.histogram_block_size}')
+        print(
+            f'{source}      {self.ticker_name}       Spread: {round(ask_price - bid_price, 2)}      Top.Blocks: {numerize(self.top_sales_block_size)}'
+            f'     H.Blocks: {numerize(self.histogram_block_size)}')
 
         # Create table instance
         table_instance = AsciiTable(table_data)
@@ -646,5 +677,5 @@ class TapeReader:
         # Align text for price column
         time_length = len(global_time_limit)
         # Default alignment is on left
-        table_instance.justify_columns = {time_length: 'right', time_length + 1: 'right', time_length + 2: 'right', time_length + 3: 'right'}
+        table_instance.justify_columns = {time_length: 'right', time_length + 1: 'right', time_length + 2: 'left', time_length + 3: 'right'}
         return table_instance.table
