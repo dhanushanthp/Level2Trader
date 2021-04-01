@@ -647,8 +647,10 @@ class TapeReader:
                 pass
 
         # Show concurrent bids and ask count
-        concon_asks = Color('{autogreen}On Ask (' + str(self.count_concurrent_sales_on_ask) + '){/autogreen}')
-        concon_bids = Color('{autored}On Bid (' + str(self.count_concurrent_sales_on_bid) + '){/autored}')
+        concon_asks = Color(
+            '{autogreen}On Ask (' + str(self.count_concurrent_sales_on_ask) + '){/autogreen}') + f'\n   {numerize(self.histogram_block_size)}'
+        concon_bids = Color(
+            '{autored}On Bid (' + str(self.count_concurrent_sales_on_bid) + '){/autored}') + f'\n{numerize(self.histogram_block_size)}    '
 
         # Add price and time accordingly as header and index
         table_data.append(global_price_limit)
@@ -658,15 +660,15 @@ class TapeReader:
         table_data.append(ask_price_hist_agg)
         table_data = list(map(list, zip(*table_data)))
         table_data.insert(0, global_time_limit + ['Price',
-                                                  color('Top on Bid', fore=(255, 99, 92), back=(0, 0, 0)),
-                                                  color('Top on Ask', fore=(0, 255, 0), back=(0, 0, 0)),
+                                                  color(f'Top on Bid\n    {numerize(self.top_sales_block_size)}    ', fore=(255, 99, 92),
+                                                        back=(0, 0, 0)),
+                                                  color(f'Top on Ask\n    {numerize(self.top_sales_block_size)}    ', fore=(0, 255, 0),
+                                                        back=(0, 0, 0)),
                                                   concon_bids,
                                                   concon_asks])
 
         # Prince Description
-        print(
-            f'{source}      {self.ticker_name}       Spread: {round(ask_price - bid_price, 2)}      Top.Blocks: {numerize(self.top_sales_block_size)}'
-            f'     H.Blocks: {numerize(self.histogram_block_size)}')
+        print(f'{source}      {self.ticker_name}       Spread: {round(ask_price - bid_price, 2)}')
 
         # Create table instance
         table_instance = AsciiTable(table_data)
