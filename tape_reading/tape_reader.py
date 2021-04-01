@@ -287,17 +287,6 @@ class TapeReader:
             else:
                 self.dict_last_size_on_ask[tick_time] = {ask_price: 0, bid_price: 0}
 
-    def clear_terminal(self):
-        """
-        Clear terminal
-        :return:
-        """
-        self.clear_counter = self.clear_counter + 1
-        if self.clear_counter == self.config.get_refresh_rate():
-            # Clear each 2 min
-            self.clear()
-            self.clear_counter = 0
-
     def level_ii_api_call(self, tick_time: str, bid_price, bid_size, ask_price, ask_size, last_price, last_size):
         """
         Update table when the level II api triggered in "middle of" time and sales calls
@@ -341,8 +330,8 @@ class TapeReader:
         # Don't initiate the print until we get the api call in last to update the dictionary
         if (bool(self.dict_last_size_on_ask)) and (bool(self.dict_last_size_on_bid)) and (self.previous_time != tick_time):
             self.previous_time = tick_time
-            self.clear_terminal()
-            print(self.display_data(closest_price, bid_price, ask_price, 'L2') + '\n\n\n\n')
+            self.clear()
+            print(self.display_data(closest_price, bid_price, ask_price, 'L2'))
 
     def time_sales_api_call(self, tick_time: str, bid_price, bid_size, ask_price, ask_size, last_price, last_size):
         """
@@ -372,8 +361,8 @@ class TapeReader:
 
         if self.previous_time != tick_time:
             self.previous_time = tick_time
-            self.clear_terminal()
-            print(self.display_data(closest_price, bid_price, ask_price, 'T&S') + '\n\n\n\n')
+            self.clear()
+            print(self.display_data(closest_price, bid_price, ask_price, 'T&S'))
 
     def top_sales_histogram(self, global_price_limit):
         """
@@ -685,6 +674,7 @@ class TapeReader:
                                                   concon_asks])
 
         # Prince Description
+        print('\n\n')
         print(f'{source}      {self.ticker_name}       Spread: {round(ask_price - bid_price, 2)}')
 
         # Create table instance
