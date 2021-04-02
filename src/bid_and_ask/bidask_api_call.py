@@ -3,7 +3,7 @@ from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
 from ibapi.client import TickerId, TickAttribBidAsk
 import sys
-from monitoring.bid_and_ask.bidask import BidAsk
+from src.bid_and_ask.bidask import BidAsk
 import datetime
 from numpy import random
 

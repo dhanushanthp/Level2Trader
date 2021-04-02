@@ -80,6 +80,20 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/top_sales/top_sales_tracker.py">
+          <value>
+            <Attribute>
+              <option name="separator" value=":" />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/top_sales/watchdog_test.py">
+          <value>
+            <Attribute>
+              <option name="separator" value=":" />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/util/price_util.py">
           <value>
             <Attribute>

@@ -3,7 +3,7 @@ from terminaltables import AsciiTable
 from colorclass import Color
 import numpy as np
 from colr import color
-from util import price_util
+from src.util import price_util
 from config import Config
 
 

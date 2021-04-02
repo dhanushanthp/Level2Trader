@@ -6,8 +6,9 @@ from colr import color
 from config import Config
 import os
 from numerize.numerize import numerize
-from util import price_util
+from src.util import price_util
 from datetime import datetime
+import json
 
 
 class TapeReader:
@@ -80,6 +81,9 @@ class TapeReader:
         # Reset top sales on every one minute
         self.top_sales_previous_time = None
 
+        # Top sales tracker each minute
+        self.top_sales_tracker = dict()
+
     def get_colour_by_bullish(self, sizes: list) -> dict:
         """
         Generate color shades w.r.t range of size
@@ -142,6 +146,15 @@ class TapeReader:
             self.top_sales_previous_time = time_by_min
 
         if self.top_sales_previous_time != time_by_min:
+            # Track top sales on bid and ask over a period of time before reset
+            self.top_sales_tracker[self.top_sales_previous_time] = (self.top_sales_on_ask, self.top_sales_on_bid)
+            list_of_time = sorted(self.top_sales_tracker.keys(), reverse=True)[:10]
+            self.top_sales_tracker = {i: self.top_sales_tracker[i] for i in list_of_time}
+
+            output = json.dumps(self.top_sales_tracker)
+            with open('data/tape_data/top_sales_on_bids_ask.json', 'w') as f:
+                f.write(output)
+
             # Reset Dictionary
             self.top_sales_on_ask = dict()
             self.top_sales_on_bid = dict()

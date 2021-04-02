@@ -1,1 +1,1 @@
-python tape_reading/tape_reader_test.py
+python src/tape_reading/tape_reader_test.py
