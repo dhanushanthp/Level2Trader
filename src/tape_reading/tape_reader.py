@@ -16,7 +16,9 @@ class TapeReader:
         """
         We don't track the actual price of last price here. rather we find the most close bid and ask price for the last price.
         The goal is to find the price on bid and price on ask for bullish and bearish signals.
+
         :param ticker:
+        :param data_writer:
         """
         self.pu = price_util.PriceUtil()
 
@@ -87,6 +89,7 @@ class TapeReader:
     def get_colour_by_bullish(self, sizes: list) -> dict:
         """
         Generate color shades w.r.t range of size
+
         :param sizes: listed trade size w.r.t bid price on time ans sales
         :return: dictionary of colors [key: size, value: color]
         """
@@ -105,6 +108,7 @@ class TapeReader:
     def get_colour_by_bearish(self, sizes: list) -> dict:
         """
         Generate color shades w.r.t range of size
+
         :param sizes: listed trade size w.r.t ask price on time ans sales
         :return: dictionary of colors [key: size, value: color]
         """
@@ -123,6 +127,7 @@ class TapeReader:
     def find_closest(bid: float, ask: float, last: float) -> float:
         """
         Find the closest price w.r.t to bid and ask compare to last value
+
         :param bid: bid price, level II first tier only
         :param ask: ask price, level II first tier only
         :param last: last price, Time & Sales
@@ -132,25 +137,28 @@ class TapeReader:
 
     def find_top_sales(self, tick_time, ask_price, bid_price, closest_price, last_size):
         """
-        Keep track of price on BID w.r.t highest size
-        :param tick_time
-        :param ask_price:
-        :param bid_price:
-        :param closest_price:
-        :param last_size:
+        Identification of top sales(sizes) in BID and ASK. Also keep track of top sales by minute and load to file for other process to visualize
+
+        :param tick_time: Time of ticker
+        :param ask_price: ask price, level II first tier only
+        :param bid_price: bid price, level II first tier only
+        :param closest_price: price close to bid or ask
+        :param last_size: last size, time & sales
         :return:
         """
+        # Time by minute
         time_by_min = ':'.join(tick_time.split(':')[:-1])
 
         if self.top_sales_previous_time is None:
             self.top_sales_previous_time = time_by_min
 
         if self.top_sales_previous_time != time_by_min:
-            # Track top sales on bid and ask over a period of time before reset
+            """
+            Track top sales on bid and ask, over a period of time before reset
+            """
             self.top_sales_tracker[self.top_sales_previous_time] = (self.top_sales_on_ask, self.top_sales_on_bid)
-            list_of_time = sorted(self.top_sales_tracker.keys(), reverse=True)[:10]
-            self.top_sales_tracker = {i: self.top_sales_tracker[i] for i in list_of_time}
-
+            limited_time = sorted(self.top_sales_tracker.keys(), reverse=True)[:10]
+            self.top_sales_tracker = {i: self.top_sales_tracker[i] for i in limited_time}
             output = json.dumps(self.top_sales_tracker)
             with open('data/tape_data/top_sales_on_bids_ask.json', 'w') as f:
                 f.write(output)
@@ -160,6 +168,9 @@ class TapeReader:
             self.top_sales_on_bid = dict()
             self.top_sales_previous_time = time_by_min
 
+        """
+        Keep track of price on BID w.r.t highest/top size
+        """
         if closest_price == bid_price:
             if closest_price in self.top_sales_on_bid:
                 if self.top_sales_on_bid[closest_price] < last_size:
@@ -167,7 +178,7 @@ class TapeReader:
             else:
                 self.top_sales_on_bid[closest_price] = self.pu.round_size(last_size)
         """
-        Keep track of price on ASK w.r.t highest size
+        Keep track of price on ASK w.r.t highest/top size
         """
         if closest_price == ask_price:
             if closest_price in self.top_sales_on_ask:
@@ -236,6 +247,7 @@ class TapeReader:
                                   last_size: int):
         """
         This function will udpate the values in dictionary regardless of 1sec table print on terminal.
+
         :param tick_time: Time of ticker
         :param bid_price: bid price, level II first tier only
         :param bid_size: bid size, level II first tier only
@@ -364,8 +376,7 @@ class TapeReader:
 
     def time_sales_api_call(self, tick_time: str, bid_price, bid_size, ask_price, ask_size, last_price, last_size):
         """
-        1. Aggregate the size of trades w.r.t to bid price, ask price and last price.
-        2. Tag last price w.r.t bid and ask values by finding most possible or closest prices
+        Update table when time and sales api triggered
         :param tick_time: Time of ticker
         :param bid_price: bid price, level II first tier only
         :param bid_size: bid size, level II first tier only
@@ -396,7 +407,8 @@ class TapeReader:
     def top_sales_histogram(self, global_price_limit):
         """
         Generate histogram for top sales
-        :param global_price_limit:
+
+        :param global_price_limit: Max time range
         :return:
         """
         top_sales_on_ask_list = [self.top_sales_on_ask[i] if i in self.top_sales_on_ask else 0 for i in global_price_limit]
@@ -412,10 +424,11 @@ class TapeReader:
     def time_and_sales_histogram(self, global_price_limit, global_time_limit, last_ask_sizes, last_bid_sizes):
         """
         Generate histogram by aggregating sizes of sales on bid and aks withen the given time frame
-        :param global_price_limit:
-        :param global_time_limit:
-        :param last_ask_sizes:
-        :param last_bid_sizes:
+
+        :param global_price_limit: Max price range
+        :param global_time_limit: Max time range
+        :param last_ask_sizes: size on ask price
+        :param last_bid_sizes: size on bid price
         :return:
         """
         # Price histogram generation
@@ -462,6 +475,7 @@ class TapeReader:
     def display_data(self, closest_price: float, bid_price: float, ask_price: float, source: str):
         """
         Generate table for terminal outputs
+
         :param closest_price: The price closest to bid or ask w.r.t last price. Which may not be an actual last price
         :param bid_price: bid price, level II first tier only
         :param ask_price: ask price, level II first tier only
@@ -469,7 +483,7 @@ class TapeReader:
         :return: table for terminal visualisation
         """
 
-        # Limit the moving time, take bid as reference because the time across dictionary will be same. That how the data aggregation has been done
+        # Limit the moving time
         global_time_limit = sorted(set(list(self.dict_last_size_on_bid.keys())
                                        + list(self.dict_last_size_on_ask.keys())
                                        + list(self.dict_ask_size_on_ask.keys())
