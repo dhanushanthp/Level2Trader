@@ -496,6 +496,7 @@ class TapeReader:
 
         # Balance the price range
         global_price_limit = sorted(set(last_bid_prices + ask_lst_price + bid_bid_lst_price + ask_ask_lst_price), reverse=True)
+        len_global_price_limit = len(global_price_limit)
 
         bid_index = None
         ask_index = None
@@ -506,10 +507,18 @@ class TapeReader:
 
             # Add the range of movement in the table
             if self.config.get_price_range_enabler():
-                min_range = 0 if bid_index - self.config.get_timesales_price_range() < 0 else bid_index - self.config.get_timesales_price_range()
-                max_range = ask_index + self.config.get_timesales_price_range()
+                # If min index goes below 0, then set 0 as min range, asks are lower than bids
+                min_range = 0 if ask_index - self.config.get_timesales_price_range() < 0 else ask_index - self.config.get_timesales_price_range()
+                # If max index goes above total price range, then set total length as max range, bids are higher than ask
+                max_range = len_global_price_limit if bid_index + self.config.get_timesales_price_range() > len_global_price_limit \
+                    else bid_index + self.config.get_timesales_price_range()
                 global_price_limit = global_price_limit[min_range:max_range]
-        except ValueError:
+
+                # Recalculate price indexes based on limited price range
+                bid_index = global_price_limit.index(bid_price)
+                ask_index = global_price_limit.index(ask_price)
+
+        except ValueError as e:
             """
             It's perfectly fine to pass this exception. Because we may have cases like below
             1. Currently we read only the last price after the completion. Therefore we may not able to find,
@@ -518,8 +527,7 @@ class TapeReader:
                 
             So we don't need to track if those prices are out of rance
             """
-            # raise e
-            pass
+            raise e
 
         # Generate top sales histogram data
         top_sales_on_ask_hist, top_sales_on_bid_hist = self.top_sales_histogram(global_price_limit)
