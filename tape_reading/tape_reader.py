@@ -77,6 +77,9 @@ class TapeReader:
         # Track the previous time to print every second
         self.previous_time = None
 
+        # Reset top sales on every one minute
+        self.top_sales_previous_time = None
+
     def get_colour_by_bullish(self, sizes: list) -> dict:
         """
         Generate color shades w.r.t range of size
@@ -123,15 +126,27 @@ class TapeReader:
         """
         return min([bid, ask], key=lambda x: abs(x - last))
 
-    def find_top_sales(self, ask_price, bid_price, closest_price, last_size):
+    def find_top_sales(self, tick_time, ask_price, bid_price, closest_price, last_size):
         """
         Keep track of price on BID w.r.t highest size
+        :param tick_time
         :param ask_price:
         :param bid_price:
         :param closest_price:
         :param last_size:
         :return:
         """
+        time_by_min = ':'.join(tick_time.split(':')[:-1])
+
+        if self.top_sales_previous_time is None:
+            self.top_sales_previous_time = time_by_min
+
+        if self.top_sales_previous_time != time_by_min:
+            # Reset Dictionary
+            self.top_sales_on_ask = dict()
+            self.top_sales_on_bid = dict()
+            self.top_sales_previous_time = time_by_min
+
         if closest_price == bid_price:
             if closest_price in self.top_sales_on_bid:
                 if self.top_sales_on_bid[closest_price] < last_size:
@@ -170,6 +185,7 @@ class TapeReader:
             Update the previous bid size, if it's not holding. If we don't do this, then in table the price will shows as holding
             """
             if self.previous_bid_price == bid_price:
+                # If match, update the size
                 self.dict_bid_size_on_bid[tick_time][bid_price] = bid_size
             else:
                 if self.previous_bid_price != 0:
@@ -217,7 +233,7 @@ class TapeReader:
         :return:
         """
 
-        self.find_top_sales(ask_price, bid_price, closest_price, last_size)
+        self.find_top_sales(tick_time, ask_price, bid_price, closest_price, last_size)
 
         self.level_ii_bids_asks(ask_price, ask_size, bid_price, bid_size, tick_time)
 

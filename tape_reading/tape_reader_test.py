@@ -1,14 +1,14 @@
 from tape_reading.tape_reader import TapeReader
 import time
 
-file1 = open('test_data/2021033122_YVR.csv', 'r')
+file1 = open('test_data/2021040123_UXIN.csv', 'r')
 lines = file1.readlines()
 
 time_sale_obj = TapeReader(ticker='TEST', data_writer=False)
 
 # time_range = [f'22:58:{str(i).zfill(2)}' for i in range(50, 57)]
 
-start_time = '22:58:54'
+start_time = '23:14:52'
 enabler = False
 
 for line in lines:
