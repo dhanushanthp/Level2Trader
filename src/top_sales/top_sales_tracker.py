@@ -3,6 +3,7 @@ import itertools
 import json
 from numerize.numerize import numerize
 from colr import color
+import numpy as np
 import os
 
 
@@ -45,13 +46,13 @@ class TopSalesTracker:
         block_size = 5000
 
         ticker_times = sorted(data.keys())
-        ll = [data[i] for i in ticker_times]
+        price_and_sizes = [data[i] for i in ticker_times]
 
-        asks = [i[0] for i in ll]
-        bids = [i[0] for i in ll]
+        dict_ask_price = [i[0] for i in price_and_sizes]
+        dict_bid_price = [i[0] for i in price_and_sizes]
 
-        bid_prices = sorted(set(itertools.chain.from_iterable(([list(i.keys()) for i in bids]))))
-        ask_prices = sorted(set(itertools.chain.from_iterable(([list(i.keys()) for i in asks]))))
+        ask_prices = sorted(set(itertools.chain.from_iterable(([list(i.keys()) for i in dict_ask_price]))))
+        bid_prices = sorted(set(itertools.chain.from_iterable(([list(i.keys()) for i in dict_bid_price]))))
         all_prices = sorted(set(bid_prices + ask_prices), reverse=True)
 
         table_data = []
@@ -60,17 +61,16 @@ class TopSalesTracker:
             price_on_bids = data[t][0]
             # 1 index for bids
             price_on_asks = data[t][1]
-
             # Price on ask bullish
             price_size_on_asks = [self.bullish_signals(block_size, price_on_asks[p]) if p in price_on_asks else '' for p in all_prices]
             # Price on bid bearish
             price_size_on_bids = [self.bearish_signals(block_size, price_on_bids[p]) if p in price_on_bids else '' for p in all_prices]
             """
-            In actual output ASK sizes will be on top and BID sizes will be in bottom. Since we do the table pivot in later part. 
+            In actual output, ASK sizes will be on top and BID sizes will be in bottom. Since we do the table pivot in later part. 
             We are adding BID front and ASK at back in below logic.
             """
-            output = ['\n'.join(x) for x in zip(price_size_on_bids, price_size_on_asks)]
-            table_data.append(output)
+            terminal_output = ['\n'.join(x) for x in zip(price_size_on_bids, price_size_on_asks)]
+            table_data.append(terminal_output)
 
         table_data.append(all_prices)
         # BID and ASK sizes will be pivot
@@ -83,6 +83,5 @@ class TopSalesTracker:
         table_instance.inner_row_border = True
         table_instance.inner_column_border = False
 
-        # table_instance.justify_columns = {0: 'center', 1: 'center', 2: 'center', 3: 'center', 4: 'center', 5: 'center', 6: 'center'}
         self.clear()
         print(table_instance.table)

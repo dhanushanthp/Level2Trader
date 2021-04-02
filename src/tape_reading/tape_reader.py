@@ -725,8 +725,7 @@ class TapeReader:
                                                   concon_asks])
 
         # Prince Description
-        print('\n\n')
-        print(f'{source}      {self.ticker_name}       Spread: {round(ask_price - bid_price, 2)}')
+        print(f'\n\n{source}      {self.ticker_name}       Spread: {round(ask_price - bid_price, 2)}')
 
         # Create table instance
         table_instance = AsciiTable(table_data)
