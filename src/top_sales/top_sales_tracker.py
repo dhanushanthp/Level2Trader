@@ -61,29 +61,33 @@ class TopSalesTracker:
         return price_ranks
 
     @staticmethod
-    def bearish_signals(block_size, actual_size):
+    def bearish_signals(block_size: int, actual_size: int, total_size: int):
         """
         Color the bearish signal histogram
         :param block_size:
         :param actual_size:
+        :param total_size: Sum of all the sizes from bid and ask
         :return:
         """
         num_of_clicks = round(actual_size / block_size)
-        num_of_clicks = color(numerize(actual_size), fore=(0, 255, 0), back=(0, 0, 0)) + ' ' + num_of_clicks * color('↑', fore=(0, 255, 0),
-                                                                                                                     back=(0, 0, 0))
+        num_of_clicks = color('(' + str(round((actual_size / total_size) * 100)) + '%) ' + numerize(actual_size), fore=(0, 255, 0),
+                              back=(0, 0, 0)) + ' ' + num_of_clicks * color('↑', fore=(0, 255, 0),
+                                                                            back=(0, 0, 0))
         return num_of_clicks
 
     @staticmethod
-    def bullish_signals(block_size, actual_size):
+    def bullish_signals(block_size:int, actual_size:int, total_size:int):
         """
         Color the bullish signal histogram
         :param block_size:
         :param actual_size:
+        :param total_size: Sum of all the sizes from bid and ask
         :return:
         """
         num_of_clicks = round(actual_size / block_size)
-        num_of_clicks = color(numerize(actual_size), fore=(255, 0, 0), back=(0, 0, 0)) + ' ' + num_of_clicks * color('↓', fore=(255, 0, 0),
-                                                                                                                     back=(0, 0, 0))
+        num_of_clicks = color('(' + str(round((actual_size / total_size) * 100)) + '%) ' + numerize(actual_size), fore=(255, 0, 0),
+                              back=(0, 0, 0)) + ' ' + num_of_clicks * color('↓', fore=(255, 0, 0),
+                                                                            back=(0, 0, 0))
         return num_of_clicks
 
     def generate_terminal_data(self, path):
@@ -93,7 +97,8 @@ class TopSalesTracker:
         :return:
         """
         top_sales_data = self.read_data(path)
-        # all_sizes = list(itertools.chain.from_iterable([list(i.values()) for i in itertools.chain.from_iterable(data.values())]))
+        all_sizes = list(itertools.chain.from_iterable([list(i.values()) for i in itertools.chain.from_iterable(top_sales_data.values())]))
+        sum_size = sum(all_sizes)
         # block_size = np.mean(all_sizes)
         block_size = 5000
 
@@ -136,9 +141,9 @@ class TopSalesTracker:
             # 1 index for bids
             price_on_asks = top_sales_data[t][1]
             # Price on ask bullish
-            price_size_on_asks = [self.bullish_signals(block_size, price_on_asks[p]) if p in price_on_asks else '' for p in all_prices]
+            price_size_on_asks = [self.bullish_signals(block_size, price_on_asks[p], sum_size) if p in price_on_asks else '' for p in all_prices]
             # Price on bid bearish
-            price_size_on_bids = [self.bearish_signals(block_size, price_on_bids[p]) if p in price_on_bids else '' for p in all_prices]
+            price_size_on_bids = [self.bearish_signals(block_size, price_on_bids[p], sum_size) if p in price_on_bids else '' for p in all_prices]
             """
             In actual output, ASK sizes will be on top and BID sizes will be in bottom. Since we do the table pivot in later part. 
             We are adding BID front and ASK at back in below logic.
