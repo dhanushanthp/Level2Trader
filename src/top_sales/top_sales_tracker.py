@@ -62,6 +62,12 @@ class TopSalesTracker:
 
     @staticmethod
     def bearish_signals(block_size, actual_size):
+        """
+        Color the bearish signal histogram
+        :param block_size:
+        :param actual_size:
+        :return:
+        """
         num_of_clicks = round(actual_size / block_size)
         num_of_clicks = color(numerize(actual_size), fore=(0, 255, 0), back=(0, 0, 0)) + ' ' + num_of_clicks * color('↑', fore=(0, 255, 0),
                                                                                                                      back=(0, 0, 0))
@@ -69,12 +75,23 @@ class TopSalesTracker:
 
     @staticmethod
     def bullish_signals(block_size, actual_size):
+        """
+        Color the bullish signal histogram
+        :param block_size:
+        :param actual_size:
+        :return:
+        """
         num_of_clicks = round(actual_size / block_size)
         num_of_clicks = color(numerize(actual_size), fore=(255, 0, 0), back=(0, 0, 0)) + ' ' + num_of_clicks * color('↓', fore=(255, 0, 0),
                                                                                                                      back=(0, 0, 0))
         return num_of_clicks
 
     def generate_terminal_data(self, path):
+        """
+        Generate terminal outputs based on json file created from tape reader calls
+        :param path:
+        :return:
+        """
         top_sales_data = self.read_data(path)
         # all_sizes = list(itertools.chain.from_iterable([list(i.values()) for i in itertools.chain.from_iterable(data.values())]))
         # block_size = np.mean(all_sizes)
@@ -134,7 +151,10 @@ class TopSalesTracker:
 
         if len(common_price) > 0:
             common_price = common_price[0]
-            all_prices = [color(i, fore=(0, 0, 0), back=(255,255,0)) if i == common_price else i for i in all_prices]
+            # If the price is same, Add both prices by different bid and ask colors
+            all_prices = [
+                color(i, fore=(0, 0, 0), back=(0, 255, 0)) + '\n' + color(i, fore=(255, 255, 255), back=(255, 0, 0)) if i == common_price else i for i
+                in all_prices]
         else:
             all_prices = [color(i, fore=(0, 0, 0), back=(0, 255, 0)) + '\n' if i == latest_top_ask else i for i in all_prices]
             all_prices = ['\n' + color(i, fore=(255, 255, 255), back=(255, 0, 0)) if i == latest_top_bid else i for i in all_prices]
