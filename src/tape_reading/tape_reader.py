@@ -157,7 +157,8 @@ class TapeReader:
             Track top sales on bid and ask, over a period of time before reset
             """
             self.top_sales_tracker[self.top_sales_previous_time] = (self.top_sales_on_ask, self.top_sales_on_bid)
-            limited_time = sorted(self.top_sales_tracker.keys(), reverse=True)[:10]
+            # Limit the price to last n minutes
+            limited_time = sorted(self.top_sales_tracker.keys(), reverse=True)[:self.config.get_top_sales_mon_period()]
             self.top_sales_tracker = {i: self.top_sales_tracker[i] for i in limited_time}
             output = json.dumps(self.top_sales_tracker)
             with open('data/tape_data/top_sales_on_bids_ask.json', 'w') as f:

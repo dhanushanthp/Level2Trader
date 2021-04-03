@@ -33,4 +33,4 @@ for line in lines:
             time_sale_obj.level_ii_api_call(tick_time, bid_price, bid_size, ask_price, ask_size, last_price, last_size)
         else:
             time_sale_obj.time_sales_api_call(tick_time, bid_price, bid_size, ask_price, ask_size, last_price, last_size)
-        time.sleep(0)
+        time.sleep(0.05)

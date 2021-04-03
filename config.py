@@ -43,6 +43,13 @@ class Config:
         """
         return self.config.getint('TIME_SALES', 'max_time_ticks')
 
+    def get_top_sales_mon_period(self):
+        """
+        Define the period for top sales monitoring
+        :return:
+        """
+        return self.config.getint('TIME_SALES', 'top_sale_mon_period')
+
     def get_refresh_rate(self):
         """
         Get the terminal refresh rate
