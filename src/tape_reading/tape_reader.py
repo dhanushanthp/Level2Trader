@@ -247,7 +247,7 @@ class TapeReader:
     def data_dictionary_generator(self, tick_time: str, bid_price: float, bid_size: int, ask_price: float, ask_size: int, closest_price: float,
                                   last_size: int):
         """
-        This function will udpate the values in dictionary regardless of 1sec table print on terminal.
+        This function will update the values in dictionary regardless of 1sec table print on terminal.
 
         :param tick_time: Time of ticker
         :param bid_price: bid price, level II first tier only
@@ -314,7 +314,7 @@ class TapeReader:
                 else:
                     self.dict_last_size_on_ask[tick_time][ask_price] = last_size
             else:
-                # Which is bid price, Where we shold have entry on "dict_last_size_on_bid" dictionary
+                # Which is bid price, Where we should have entry on "dict_last_size_on_bid" dictionary
                 if ask_price not in self.dict_last_size_on_ask[tick_time]:
                     self.dict_last_size_on_ask[tick_time][ask_price] = 0
 
@@ -425,7 +425,7 @@ class TapeReader:
 
     def time_and_sales_histogram(self, global_price_limit, global_time_limit, last_ask_sizes, last_bid_sizes):
         """
-        Generate histogram by aggregating sizes of sales on bid and aks withen the given time frame
+        Generate histogram by aggregating sizes of sales on bid and aks within the given time frame
 
         :param global_price_limit: Max price range
         :param global_time_limit: Max time range
@@ -542,9 +542,6 @@ class TapeReader:
         # Balance the price range
         global_price_limit = sorted(set(last_bid_prices + ask_lst_price + bid_bid_lst_price + ask_ask_lst_price), reverse=True)
         len_global_price_limit = len(global_price_limit)
-
-        bid_index = None
-        ask_index = None
 
         try:
             bid_index = global_price_limit.index(bid_price)
