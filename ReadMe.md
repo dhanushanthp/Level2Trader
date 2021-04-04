@@ -5,12 +5,16 @@ should be aggregated. Because those are completed trades.
 # Features
 ## Identification of Sales on BID and ASK
 ### Key function
-* Identify the sales on bid
-* Identify the sales on ask
-* Aggregate total number of sales on bid over 10seconds(Configurable) and show as "On Bid count" every 1 second
+* Identify the sales on BID by comparing the price with level II BID.
+    * If the "last" price very close to Level II BID then the transaction considered as "price on BID"
+    * This is a bearish signal
+* Identify the sales on ASK by comparing the price with level II ASK.   
+    * If the "last" price very close to Level II ASK then the transaction considered as "price on ASK"
+    * This is a bullish signal
+* Aggregate total number of sales on BID over 10seconds(Configurable) and show as "On Bid count" which updates every 1 second
     * Count the concurrent call on bid and show along with the title
-* Aggregate total number of sales on ask over 10seconds(configurable) and show as "On Ask count" every 1 second
-    * Count the concurrent call on ask and show along with the title
+* Aggregate total number of sales on ASK over 10seconds(configurable) and show as "On Ask count" which updates every 1 second
+    * Count the concurrent call on ASK and show along with the title
 * Show top sale size over the 10second(Configurable) period
     * Top sales on Bid in "Top on Bid"
     * Top sales on Ask in "Top on Ask"
@@ -65,3 +69,10 @@ should be aggregated. Because those are completed trades.
 
 # Current Challenges
 1. The application will not work on high spread stocks. Such as spread more than 2C~3C
+
+
+# Backlog
+1. Adding exchange in to the analysis
+2. Development of rules based on extracted outputs
+   1. If top sales more than x%  go long or short on bid or ask
+2. Implementation of ML model or buy signal to predict the possible hike
