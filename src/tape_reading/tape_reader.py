@@ -375,7 +375,7 @@ class TapeReader:
             self.clear()
             print(self.display_data(closest_price, bid_price, ask_price, 'L2'))
 
-    def time_sales_api_call(self, tick_time: str, bid_price, bid_size, ask_price, ask_size, last_price, last_size):
+    def time_sales_api_call(self, tick_time: str, bid_price, bid_size, ask_price, ask_size, last_price, last_size, exchange):
         """
         Update table when time and sales api triggered
         :param tick_time: Time of ticker
@@ -385,6 +385,7 @@ class TapeReader:
         :param ask_size: ask size, level II first tier only
         :param last_price: last price, time & sales
         :param last_size: last size, time & sales
+        :param exchange:
         :return: :return: None, Show table in terminal
         """
         if self.previous_time is None:

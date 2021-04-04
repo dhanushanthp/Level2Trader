@@ -54,7 +54,7 @@ class IBapi(EWrapper, EClient):
             # TODO add the level II time stamp in below condition, If both time stamp match then process data
             if (self.bid != 0) and (self.ask != 0):
                 self.time_and_sales.time_sales_api_call(datetime.datetime.fromtimestamp(ticktime).strftime("%H:%M:%S"), self.bid, self.bid_size,
-                                                        self.ask, self.ask_size, price, size)
+                                                        self.ask, self.ask_size, price, size, exchange)
 
     def tickByTickBidAsk(self, reqId: int, ticktime: int, bidPrice: float, askPrice: float, bidSize: int, askSize: int,
                          tickAttribBidAsk: TickAttribBidAsk):
