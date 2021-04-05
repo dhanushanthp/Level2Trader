@@ -7,6 +7,7 @@ from config import Config
 import os
 from numerize.numerize import numerize
 from src.util import price_util
+from src.util import time_util
 from datetime import datetime
 import json
 
@@ -66,6 +67,7 @@ class TapeReader:
         self.colors_bearish = [(255, 0, 0), (255, 0, 0), (255, 255, 0), (255, 255, 0), (255, 255, 255), (255, 255, 255)]
 
         self.pu = price_util.PriceUtil()
+        self.tu = time_util.TimeUtil()
         self.config = Config()
         self.time_ticks_filter = self.config.get_timesales_timeticks()
 
@@ -147,7 +149,10 @@ class TapeReader:
         :return:
         """
         # Time by minute
-        time_by_min = ':'.join(tick_time.split(':')[:-1])
+        # time_by_min = ':'.join(tick_time.split(':')[:-1])
+        # Set the 5 second update
+        tick_time_split = tick_time.split(":")
+        time_by_min = ':'.join(tick_time_split[:-1]) + ':' + self.tu.round_time(int(tick_time_split[-1]), base=10)
 
         if self.top_sales_previous_time is None:
             self.top_sales_previous_time = time_by_min
@@ -353,15 +358,18 @@ class TapeReader:
         :param last_size: last size, time & sales
         :return: None, Show table in terminal
         """
-
-        if self.previous_time is None:
-            # Set current time as previous time if it's none
-            self.previous_time = tick_time
-
         # Write data to file
         if self.data_writer:
             with open(f'data/test_data/{self.DATE}_{self.ticker_name}.csv', 'a') as file_writer:
                 file_writer.write(f'{tick_time},{bid_price},{bid_size},{ask_price},{ask_size},{last_price},{last_size},l2\n')
+
+        # Set the 5 second update
+        # tick_time_split = tick_time.split(":")
+        # tick_time = ':'.join(tick_time_split[:-1]) + ':' + self.tu.round_time(int(tick_time_split[-1]), base=5)
+
+        if self.previous_time is None:
+            # Set current time as previous time if it's none
+            self.previous_time = tick_time
 
         # Find the closest price w.r.t to last price on bid or ask
         closest_price = self.find_closest(bid_price, ask_price, last_price)
@@ -386,18 +394,23 @@ class TapeReader:
         :param last_price: last price, time & sales
         :param last_size: last size, time & sales
         :param exchange:
-        :return: :return: None, Show table in terminal
+        :return: None, Show table in terminal
         """
-        if self.previous_time is None:
-            self.previous_time = tick_time
-
-        # Find the closest price w.r.t to last price on bid or ask
-        closest_price = self.find_closest(bid_price, ask_price, last_price)
 
         # Write data to file
         if self.data_writer:
             with open(f'data/test_data/{self.DATE}_{self.ticker_name}.csv', 'a') as file_writer:
                 file_writer.write(f'{tick_time},{bid_price},{bid_size},{ask_price},{ask_size},{last_price},{last_size},t&s\n')
+
+        # Set the 5 second update
+        # tick_time_split = tick_time.split(":")
+        # tick_time = ':'.join(tick_time_split[:-1]) + ':' + self.tu.round_time(int(tick_time_split[-1]), base=5)
+
+        if self.previous_time is None:
+            self.previous_time = tick_time
+
+        # Find the closest price w.r.t to last price on bid or ask
+        closest_price = self.find_closest(bid_price, ask_price, last_price)
 
         self.data_dictionary_generator(tick_time, bid_price, bid_size, ask_price, ask_size, closest_price, last_size)
 
