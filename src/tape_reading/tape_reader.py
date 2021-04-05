@@ -360,7 +360,7 @@ class TapeReader:
 
         # Write data to file
         if self.data_writer:
-            with open(f'test_data/{self.DATE}_{self.ticker_name}.csv', 'a') as file_writer:
+            with open(f'data/test_data/{self.DATE}_{self.ticker_name}.csv', 'a') as file_writer:
                 file_writer.write(f'{tick_time},{bid_price},{bid_size},{ask_price},{ask_size},{last_price},{last_size},l2\n')
 
         # Find the closest price w.r.t to last price on bid or ask
@@ -396,7 +396,7 @@ class TapeReader:
 
         # Write data to file
         if self.data_writer:
-            with open(f'test_data/{self.DATE}_{self.ticker_name}.csv', 'a') as file_writer:
+            with open(f'data/test_data/{self.DATE}_{self.ticker_name}.csv', 'a') as file_writer:
                 file_writer.write(f'{tick_time},{bid_price},{bid_size},{ask_price},{ask_size},{last_price},{last_size},t&s\n')
 
         self.data_dictionary_generator(tick_time, bid_price, bid_size, ask_price, ask_size, closest_price, last_size)
