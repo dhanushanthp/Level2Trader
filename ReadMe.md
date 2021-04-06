@@ -1,3 +1,24 @@
+# Information
+* Level 2 will show full depth. The market data subscriptions for Depth of Book (Level 2) quotes on US stocks are NYSE OpenBook, NYSE ArcaBook, NASDAQ TotalView-OpenView, NASDAQ BX TotalView and Cboe BZX Depth of Book.
+* Call reqMarketDepth instead of reqTickbyTick for level II data. https://interactivebrokers.github.io/tws-api/market_depth.html
+
+
+Level 1 would be the current best bid/offer prices
+
+Top sales on bid  and ask really helped to find the signal but we need to build this in a different timeframe along with a total sales which is sum on bid and ask ratios.
+
+If the ratio more than 50 percentage on ask compared to bid then it’s a bullish signal otherwise it’s bearish accordingly
+
+
+Using tick by tick  to data we pick only level one bid and ask and time in sales. The level one bid and ask gives the current market demand or supply. because the overall market demand and supply comes from level two. Which can be requested through request market Depth API.
+So we use the level one data only to find the sales on bid and ask with respect to last transaction.  Eventually the top sales on bid or ask.
+
+We are trying to implement the bit and ask on sales
+
+
+is there any way to find my market data through api is limited already? While I’m using the api?
+Kunal Sa: you can find the exact number of market data lines by pressing key combination Ctrl-Alt-= on TWS
+
 # BID and ASK  VS Last
 The bid and ask should not be aggregated. Because those are not executed trades. It's just display as a flash values. On other hand the last data 
 should be aggregated. Because those are completed trades.
@@ -46,6 +67,9 @@ should be aggregated. Because those are completed trades.
 6. How to properly close the connection
     > The version update of api fix the peer connection error. So temp fix works
 
+7. The price on bid ask is not working properly. Sometimes the bigger sales slip to bids and vice versa. But the signals are working fine.
+    * The current level 1 bid and ask is not updating properly.
+
 # Experiment
 1. What is the block size to show in tape reading window?
     > 100s works better also this was kind of an default values in trading platforms
@@ -72,7 +96,19 @@ should be aggregated. Because those are completed trades.
 
 
 # Backlog
+1. Filter out the smaller size trades on time and sales
+2. Change the top sales on bid and ask over period from 1 min to shorter time frame (10s). So we can enter and exit trade fast. Don’t need to wait for whole 1 min. But check whether it’s working on 1 min.
+	def myround(x, base=5):
+	 	return base * round(x/base)
+3. Current implementation supports to forex as well since we use the level 1 data. Check on possibility
+	1. May need to tune the block sizes. Because the forex trades high in size
 1. Adding exchange in to the analysis
 2. Development of rules based on extracted outputs
    1. If top sales more than x%  go long or short on bid or ask
 2. Implementation of ML model or buy signal to predict the possible hike
+4. Currently the implementation is on level 1 (time and sales, current bid and ask). May need to extend to   level II data. Which has very depth of bid and ask.
+5. Implementation of plots in proper UI
+	1. 3D plots for time and sales (z-time, x-bid, y-ask)
+	2. Bar chart to show realtime level II only based on Level II api call. Raw visuals
+6. Automated trading
+	1. Implementation of automated trading where If the size on price goes more than x% of last n  	    minutes of trades. Give a signal to user. To get in trade or not. Then the user can just decide 	    throu	gh API.

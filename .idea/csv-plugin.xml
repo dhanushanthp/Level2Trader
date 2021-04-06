@@ -66,6 +66,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/src/tape_reading/tape_reader_top_sales.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/tape_reading/tape_reader.py">
           <value>
             <Attribute>

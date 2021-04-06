@@ -50,6 +50,13 @@ class Config:
         """
         return self.config.getint('TIME_SALES', 'top_sale_mon_period')
 
+    def get_time_frequency(self):
+        """
+        define the frequency of time in seconds
+        :return:
+        """
+        return self.config.getint('TIME_SALES', 'time_frequency')
+
     def get_refresh_rate(self):
         """
         Get the terminal refresh rate
