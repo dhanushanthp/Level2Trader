@@ -259,7 +259,12 @@ class TapeReader:
                                              fore=(255, 0, 0),
                                              back=(0, 0, 0)) if x['bid'] != 0 else '', axis=1)
 
-            # Total Sales Output
+            # Highlight the total output w.r.t the Total percentage on bid/ask
+            merged['total'] = merged.apply(lambda x: (
+                color(x['total'], fore=(0, 255, 0), back=(0, 0, 0)) if x['ask'] > x['bid'] else '\n' + color(x['total'], fore=(255, 0, 0),
+                                                                                                             back=(0, 0, 0))
+            ) if (x['total_rank'] == 1) else x['total'], axis=1)
+
             total_sales_output = dict(zip(merged['price'], merged['total']))
             total_sales_output = [total_sales_output[i] if i in total_sales_output else '' for i in price_range]
 
