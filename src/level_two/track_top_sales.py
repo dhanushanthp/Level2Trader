@@ -3,7 +3,7 @@ import time
 from watchdog.observers import Observer
 from watchdog.events import FileModifiedEvent
 from watchdog.events import FileSystemEventHandler
-from src.top_sales import top_sales_tracker
+from src.main import top_sales_tracker
 
 
 class TriggerOnChange(FileSystemEventHandler):
