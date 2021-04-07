@@ -223,9 +223,6 @@ class TapeReader:
 
         total_sizes = np.sum(last_ask_sizes + last_bid_sizes)
 
-        # Calculate the block size for top sales histogram
-        block_size = np.mean(last_ask_sizes + last_ask_sizes)
-
         bid_rank = self.calculate_ranks(bid_prices_sizes, global_price_limit)
         ask_rank = self.calculate_ranks(ask_prices_sizes, global_price_limit)
 
@@ -249,17 +246,12 @@ class TapeReader:
 
                     # Select sizes for each price and time
                     last_bid_size = self.top_se.top_sales_on_bid[current_time][current_price]
-                    last_bid_size = numerize(last_bid_size) + ' ' + round((last_bid_size / total_sizes) * 10) * color('↓', fore=(
-                        255, 0, 0),
-                                                                                                                      back=(0, 0,
-                                                                                                                            0)) if last_bid_size != 0 else ' '
+                    last_bid_size = numerize(last_bid_size) + ' ' + round((last_bid_size / total_sizes) * 10) * \
+                                    color('↓', fore=(255, 0, 0), back=(0, 0, 0)) if last_bid_size != 0 else ' '
+
                     last_ask_size = self.top_se.top_sales_on_ask[current_time][current_price]
-                    last_ask_size = numerize(last_ask_size) + ' ' + round((last_ask_size / total_sizes) * 10) * color('↑',
-                                                                                                                      fore=(
-                                                                                                                          0, 255,
-                                                                                                                          0),
-                                                                                                                      back=(0, 0,
-                                                                                                                            0)) if last_ask_size != 0 else ' '
+                    last_ask_size = numerize(last_ask_size) + ' ' + round((last_ask_size / total_sizes) * 10) * \
+                                    color('↑', fore=(0, 255, 0), back=(0, 0, 0)) if last_ask_size != 0 else ' '
 
                     normal_transaction = color(last_ask_size, fore=(0, 255, 0), back=(0, 0, 0)) + '\n' + color(last_bid_size, fore=(255, 0, 0),
                                                                                                                back=(0, 0, 0))
@@ -304,10 +296,16 @@ class TapeReader:
         indicator_top_ask_size_price = str(max(latest_size_on_price_ask.items(), key=operator.itemgetter(1))[0])
         indicator_top_bid_size_price = str(max(latest_size_on_price_bid.items(), key=operator.itemgetter(1))[0])
 
-        global_price_limit = [color(i, fore=(0, 0, 0), back=(0, 255, 0)) + '\n' if i == indicator_top_ask_size_price else i for i in
-                              global_price_limit]
-        global_price_limit = ['\n' + color(i, fore=(255, 255, 255), back=(255, 0, 0)) if i == indicator_top_bid_size_price else i for i in
-                              global_price_limit]
+        if indicator_top_bid_size_price == indicator_top_ask_size_price:
+            # When both price at their top
+            global_price_limit = [color(i, fore=(0, 0, 0), back=(0, 255, 0)) + '\n' + color(i, fore=(255, 255, 255), back=(
+            255, 0, 0)) if i == indicator_top_ask_size_price else i for i in
+                                  global_price_limit]
+        else:
+            global_price_limit = [color(i, fore=(0, 0, 0), back=(0, 255, 0)) + '\n' if i == indicator_top_ask_size_price else i for i in
+                                  global_price_limit]
+            global_price_limit = ['\n' + color(i, fore=(255, 255, 255), back=(255, 0, 0)) if i == indicator_top_bid_size_price else i for i in
+                                  global_price_limit]
 
         """
         Rank price by the sizes within the time range
@@ -316,7 +314,7 @@ class TapeReader:
         table_data.append(global_price_limit)
         table_data.append(ranks)
         table_data = list(map(list, zip(*table_data)))
-        table_data.insert(0, global_time_limit + ['Price'])
+        table_data.insert(0, global_time_limit + ['Price', 'Rank'])
 
         # Prince Description
         print(f'{source}      {self.ticker_name}       Spread: {round(ask_price - bid_price, 2)}')
