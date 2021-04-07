@@ -15,12 +15,3 @@ class PriceUtil:
         """
         num_slots = round(size / self.slot_size)
         return num_slots
-
-    @staticmethod
-    def round_size(size):
-        """
-        Round the size to 100s
-        :param size:
-        :return:
-        """
-        return round(int(size), -2)

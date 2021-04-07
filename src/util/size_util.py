@@ -13,3 +13,13 @@ class SizeUtil:
         :return: Closest possible to bid or ask
         """
         return min([bid, ask], key=lambda x: abs(x - last))
+
+    @staticmethod
+    def round_size(size, base=2):
+        """
+        Round the size to 100s
+        :param size:
+        :param base
+        :return:
+        """
+        return round(int(size), -base)
