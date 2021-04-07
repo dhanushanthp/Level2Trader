@@ -88,6 +88,9 @@ should be aggregated. Because those are completed trades.
 1. Some times the ask is less than bid price. And how that prints in terminal
     12.38AM in file 4. price at $5.92 
     12:46 same price
+2. Why the time stamp 21:33:21 assign to 21:33:20 with the frequency of 2 seconds
+    > Since we are doing the round with base of 2 seconds. This is happening.<br> Like wise if we use base frequency of 5 seconds. Then 
+   > `21,22,23` will be assigned to `20` and `24,25,26` will be assigned to `25`
    
 
 
@@ -106,7 +109,7 @@ should be aggregated. Because those are completed trades.
 2. Development of rules based on extracted outputs
    1. If top sales more than x%  go long or short on bid or ask
 2. Implementation of ML model or buy signal to predict the possible hike
-4. Currently the implementation is on level 1 (time and sales, current bid and ask). May need to extend to   level II data. Which has very depth of bid and ask.
+4. Currently, the implementation is on level 1 (time and sales, current bid and ask). May need to extend to   level II data. Which has very depth of bid and ask.
 5. Implementation of plots in proper UI
 	1. 3D plots for time and sales (z-time, x-bid, y-ask)
 	2. Bar chart to show realtime level II only based on Level II api call. Raw visuals
