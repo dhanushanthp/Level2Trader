@@ -180,6 +180,53 @@ class TapeReader:
 
         return price_ranks
 
+    def top_on_sales_pre_display_data(self):
+        """
+        Prepare data for pre display for top sales
+        :return:
+        """
+        # Limit the moving time to bid and ask ranges
+        global_time_limit = sorted(
+            set(list(self.top_se.top_sales_on_bid.keys()) + list(self.top_se.top_sales_on_ask.keys())))[
+                            -self.time_ticks_filter:]
+
+        # All the prices on bid within the time limit and reverse high to low
+        top_on_bid_price_list = sorted(
+            list((set(itertools.chain.from_iterable([list(self.top_se.top_sales_on_bid[i].keys()) for i in global_time_limit])))),
+            reverse=True)
+
+        # All the prices on ask within the time limit and reverse low to high
+        top_on_ask_price_list = sorted(
+            list((set(itertools.chain.from_iterable([list(self.top_se.top_sales_on_ask[i].keys()) for i in global_time_limit])))),
+            reverse=True)
+
+        # All the sizes on ask within the time limit and and sorted
+        top_on_ask_size_list = sorted(
+            set(itertools.chain.from_iterable([self.top_se.top_sales_on_ask[i].values() for i in global_time_limit])))
+
+        # All the sizes on ask within the time limit and and sorted
+        top_on_bid_size_list = sorted(
+            set(itertools.chain.from_iterable([self.top_se.top_sales_on_bid[i].values() for i in global_time_limit])))
+
+        # List of dictionaries
+        top_on_bid_price_size_list_of_dictionaries = [self.top_se.top_sales_on_bid[i] for i in global_time_limit]
+        top_on_ask_price_size_list_of_dictionaries = [self.top_se.top_sales_on_ask[i] for i in global_time_limit]
+
+        # Balance the price range
+        global_price_limit = sorted(set(top_on_bid_price_list + top_on_ask_price_list), reverse=True)
+        total_sizes = np.sum(top_on_ask_size_list + top_on_bid_size_list)
+        top_on_bid_rank = self.calculate_ranks(top_on_bid_price_size_list_of_dictionaries, global_price_limit)
+        top_on_ask_rank = self.calculate_ranks(top_on_ask_price_size_list_of_dictionaries, global_price_limit)
+
+        # Highlight by colour
+        top_on_bid_rank = [color(i, fore=(255, 0, 0), back=(0, 0, 0)) if i != '' else '' for i in top_on_bid_rank]
+        top_on_ask_rank = [color(i, fore=(0, 255, 0), back=(0, 0, 0)) if i != '' else '' for i in top_on_ask_rank]
+
+        # Combine the ranks
+        ranks_output = ['\n'.join(x) for x in zip(top_on_ask_rank, top_on_bid_rank)]
+
+        return global_price_limit, global_time_limit, ranks_output, total_sizes
+
     def display_data(self, closest_price: float, bid_price: float, ask_price: float, source: str):
         """
         Generate table for terminal outputs
@@ -191,47 +238,7 @@ class TapeReader:
         :return: table for terminal visualisation
         """
 
-        # Limit the moving time to bid and ask ranges
-        global_time_limit = sorted(
-            set(list(self.top_se.top_sales_on_bid.keys()) + list(self.top_se.top_sales_on_ask.keys())))[
-                            -self.time_ticks_filter:]
-
-        # All the prices on bid within the time limit and reverse high to low
-        bid_lst_price = sorted(
-            list((set(itertools.chain.from_iterable([list(self.top_se.top_sales_on_bid[i].keys()) for i in global_time_limit])))),
-            reverse=True)
-
-        # All the prices on ask within the time limit and reverse low to high
-        ask_lst_price = sorted(
-            list((set(itertools.chain.from_iterable([list(self.top_se.top_sales_on_ask[i].keys()) for i in global_time_limit])))),
-            reverse=True)
-
-        # All the sizes on ask within the time limit and and sorted
-        last_ask_sizes = sorted(
-            set(itertools.chain.from_iterable([self.top_se.top_sales_on_ask[i].values() for i in global_time_limit])))
-
-        # All the sizes on ask within the time limit and and sorted
-        last_bid_sizes = sorted(
-            set(itertools.chain.from_iterable([self.top_se.top_sales_on_bid[i].values() for i in global_time_limit])))
-
-        # List of dictionaries
-        bid_prices_sizes = [self.top_se.top_sales_on_bid[i] for i in global_time_limit]
-        ask_prices_sizes = [self.top_se.top_sales_on_ask[i] for i in global_time_limit]
-
-        # Balance the price range
-        global_price_limit = sorted(set(bid_lst_price + ask_lst_price), reverse=True)
-
-        total_sizes = np.sum(last_ask_sizes + last_bid_sizes)
-
-        bid_rank = self.calculate_ranks(bid_prices_sizes, global_price_limit)
-        ask_rank = self.calculate_ranks(ask_prices_sizes, global_price_limit)
-
-        # Highlight by colour
-        bid_rank = [color(i, fore=(255, 0, 0), back=(0, 0, 0)) if i != '' else '' for i in bid_rank]
-        ask_rank = [color(i, fore=(0, 255, 0), back=(0, 0, 0)) if i != '' else '' for i in ask_rank]
-
-        # Combine the ranks
-        ranks = ['\n'.join(x) for x in zip(ask_rank, bid_rank)]
+        global_price_limit, global_time_limit, ranks_output, total_sizes = self.top_on_sales_pre_display_data()
 
         """
         Generate data for the table with high sales on bid and ask within given time frame. 
@@ -299,7 +306,7 @@ class TapeReader:
         if indicator_top_bid_size_price == indicator_top_ask_size_price:
             # When both price at their top
             global_price_limit = [color(i, fore=(0, 0, 0), back=(0, 255, 0)) + '\n' + color(i, fore=(255, 255, 255), back=(
-            255, 0, 0)) if i == indicator_top_ask_size_price else i for i in
+                255, 0, 0)) if i == indicator_top_ask_size_price else i for i in
                                   global_price_limit]
         else:
             global_price_limit = [color(i, fore=(0, 0, 0), back=(0, 255, 0)) + '\n' if i == indicator_top_ask_size_price else i for i in
@@ -312,7 +319,7 @@ class TapeReader:
         """
         # Add price and time accordingly as header and index
         table_data.append(global_price_limit)
-        table_data.append(ranks)
+        table_data.append(ranks_output)
         table_data = list(map(list, zip(*table_data)))
         table_data.insert(0, global_time_limit + ['Price', 'Rank'])
 
