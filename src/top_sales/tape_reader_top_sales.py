@@ -7,6 +7,7 @@ import os
 from numerize.numerize import numerize
 from src.util import price_util
 from src.util import time_util
+from src.util import size_util
 from datetime import datetime
 import operator
 
@@ -21,6 +22,7 @@ class TapeReader:
         :param data_writer:
         """
         self.pu = price_util.PriceUtil()
+        self.su = size_util.SizeUtil()
 
         # Price and size w.r.t BID and last, Bearish signal
         self.dict_last_size_on_bid = dict()
@@ -28,27 +30,15 @@ class TapeReader:
         # Price and size w.r.t ASK and last, Bullish signal
         self.dict_last_size_on_ask = dict()
 
-        # Counter of concurrent bid calls
-        self.count_concurrent_sales_on_bid = 0
-
-        # Counter of concurrent bid calls
-        self.count_concurrent_sales_on_ask = 0
-
         # Clear Terminal
         self.clear = lambda: os.system('clear')
         self.clear_counter = 0
-
-        # Dynamic Histogram block size, Default 100, Find the max transaction size and update accordingly
-        self.histogram_block_size = 100
 
         # Most high price on ask, Bullish within the price range
         self.top_sales_on_ask = dict()
 
         # Most hit price on bids, Bearish within the price range
         self.top_sales_on_bid = dict()
-
-        # Default 100
-        self.top_sales_block_size = 100
 
         # Ticker by each second, So the size aggregation will be done by seconds
         self.ticker_name = ticker
@@ -69,25 +59,7 @@ class TapeReader:
         # Track the previous time to print every second
         self.previous_time = None
 
-        # Reset top sales on every one minute
-        self.top_sales_previous_time = None
-
-        # Top sales tracker each minute
-        self.top_sales_tracker = dict()
-
         self.time_frequency = self.config.get_time_frequency()
-
-    @staticmethod
-    def find_closest(bid: float, ask: float, last: float) -> float:
-        """
-        Find the closest price w.r.t to bid and ask compare to last value
-
-        :param bid: bid price, level II first tier only
-        :param ask: ask price, level II first tier only
-        :param last: last price, Time & Sales
-        :return: Closest possible to bid or ask
-        """
-        return min([bid, ask], key=lambda x: abs(x - last))
 
     def generate_top_sales(self, tick_time, ask_price, ask_size, bid_price, bid_size, closest_price, last_size):
         """
@@ -330,12 +302,12 @@ class TapeReader:
             self.previous_time = tick_time
 
         # Find the closest price w.r.t to last price on bid or ask
-        closest_price = self.find_closest(bid_price, ask_price, last_price)
+        closest_price = self.su.find_closest(bid_price, ask_price, last_price)
 
         # Don't initiate the print until we get the api call in last to update the dictionary
         if (bool(self.top_sales_on_ask)) and (bool(self.top_sales_on_bid)) and (self.previous_time != tick_time):
             self.clear()
-            print(self.display_data(closest_price, bid_price, ask_price, 'L1B_A'))
+            print(self.display_data(closest_price, bid_price, ask_price, 'B&A'))
             self.previous_time = tick_time
 
         # Update the level II bid and ask with sizes
@@ -367,7 +339,7 @@ class TapeReader:
             self.previous_time = tick_time
 
         # Find the closest price w.r.t to last price on bid or ask
-        closest_price = self.find_closest(bid_price, ask_price, last_price)
+        closest_price = self.su.find_closest(bid_price, ask_price, last_price)
 
         if self.previous_time != tick_time:
             self.clear()
@@ -376,84 +348,6 @@ class TapeReader:
             self.previous_time = tick_time
 
         self.data_dictionary_generator(tick_time, bid_price, bid_size, ask_price, ask_size, closest_price, last_size)
-
-    def top_sales_histogram(self, global_price_limit):
-        """
-        Generate histogram for top sales
-
-        :param global_price_limit: Max time range
-        :return:
-        """
-        top_sales_on_ask_list = [self.top_sales_on_ask[i] if i in self.top_sales_on_ask else 0 for i in global_price_limit]
-        top_sales_on_bid_list = [self.top_sales_on_bid[i] if i in self.top_sales_on_bid else 0 for i in global_price_limit]
-        # Find the mean from top bid and ask sizes
-        self.top_sales_block_size = int(max(self.pu.round_size((np.mean(top_sales_on_bid_list) + np.mean(top_sales_on_ask_list)) / 2), 100))
-        # Top sales on ask
-        top_sales_on_ask_hist = [round(i / self.top_sales_block_size) * color('↑', fore=(0, 255, 0), back=(0, 0, 0)) for i in top_sales_on_ask_list]
-        # Top sales on bid
-        top_sales_on_bid_hist = [round(i / self.top_sales_block_size) * color('↓', fore=(255, 0, 0), back=(0, 0, 0)) for i in top_sales_on_bid_list]
-        return top_sales_on_ask_hist, top_sales_on_bid_hist
-
-    def time_and_sales_histogram(self, global_price_limit, global_time_limit, last_ask_sizes, last_bid_sizes):
-        """
-        Generate histogram by aggregating sizes of sales on bid and aks within the **given time frame**
-
-        :param global_price_limit: Max price range
-        :param global_time_limit: Max time range
-        :param last_ask_sizes: size on ask price
-        :param last_bid_sizes: size on bid price
-        :return:
-        """
-        # Price histogram generation
-        list_last_bid_price_size_dict = [self.dict_last_size_on_bid[i] for i in global_time_limit]  # Price on Bid, Bearish Signal
-        list_last_ask_price_size_dict = [self.dict_last_size_on_ask[i] for i in global_time_limit]  # Price on Ask, Bullish Signal
-
-        # Aggregate the size on BIDs
-        bid_price_size_agg = dict()
-        for price_size in list_last_bid_price_size_dict:
-            for var_price in price_size.keys():
-                if var_price in bid_price_size_agg:
-                    bid_price_size_agg[var_price] = bid_price_size_agg[var_price] + price_size[var_price]
-                else:
-                    bid_price_size_agg[var_price] = price_size[var_price]
-
-        # Aggregate the size on ASKs
-        ask_price_size_agg = dict()
-        for price_size in list_last_ask_price_size_dict:
-            for var_price in price_size.keys():
-                if var_price in ask_price_size_agg:
-                    ask_price_size_agg[var_price] = ask_price_size_agg[var_price] + price_size[var_price]
-                else:
-                    ask_price_size_agg[var_price] = price_size[var_price]
-
-        ask_price_hist_agg = []
-        bid_price_hist_agg = []
-
-        # Find the percentage of size distribution for the same price on bid and ask
-        for price in global_price_limit:
-            # Price on ask by specific time
-            ask_sizes = ask_price_size_agg[price]
-            # Price on bid by specific time
-            bid_sizes = bid_price_size_agg[price]
-
-            total_bids = int(np.sum(bid_sizes))
-            total_asks = int(np.sum(ask_sizes))
-            totals = np.sum(total_asks + total_bids)
-
-            # Find bid to ask size ratio on sales
-            ask_ratio = round(total_asks / totals, 2)
-            bid_ratio = round(total_bids / totals, 2)
-
-            # Clean 0 values
-            ask_ratio = ask_ratio if (ask_ratio != 0.0) or np.isnan(ask_ratio) else ''
-            bid_ratio = bid_ratio if (bid_ratio != 0.0) or np.isnan(bid_ratio) else ''
-            total_asks = numerize(total_asks) if total_asks != 0.0 else ''
-            total_bids = numerize(total_bids) if total_bids != 0.0 else ''
-
-            ask_price_hist_agg.append(f'{ask_ratio} {total_asks}')
-            bid_price_hist_agg.append(f'{total_bids} {bid_ratio}')
-
-        return ask_price_hist_agg, bid_price_hist_agg
 
     @staticmethod
     def calculate_ranks(dict_prices, all_prices):
