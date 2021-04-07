@@ -1,12 +1,15 @@
 from src.main.tape_reader import TapeReader
+from config import Config
 import time
 
-file1 = open('data/test_data/2021040621_PHUN.csv', 'r')
+file1 = open('data/test_data/2021040721_SOS.csv', 'r')
 lines = file1.readlines()
 
-time_sale_obj = TapeReader(ticker='TEST', data_writer=False)
+config = Config()
 
-start_time = '21:30:00'
+time_sale_obj = TapeReader(ticker='TEST', data_writer=True, time_frequency=config.get_time_frequency())
+
+start_time = '21:18:53'
 enabler = False
 
 for line in lines:

@@ -15,7 +15,7 @@ import pandas as pd
 
 
 class TapeReader:
-    def __init__(self, ticker, data_writer: bool):
+    def __init__(self, ticker, data_writer: bool, time_frequency):
         """
         We don't track the actual price of last price here. rather we find the most close bid and ask price for the last price.
         The goal is to find the price on bid and price on ask for bullish and bearish signals.
@@ -36,7 +36,7 @@ class TapeReader:
         self.ticker_name = ticker
         self.config = Config()
         self.time_ticks_filter = self.config.get_timesales_timeticks()
-        self.time_frequency = self.config.get_time_frequency()
+        self.time_frequency = time_frequency
         self.DATE = datetime.today().strftime('%Y%m%d%H')
 
         self.data_writer = data_writer

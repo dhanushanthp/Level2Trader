@@ -17,7 +17,7 @@ class IBapi(EWrapper, EClient):
         """
         EClient.__init__(self, self)
         config = Config()
-        self.time_and_sales = TapeReader(ticker=ticker, data_writer=config.get_can_write_data())
+        self.time_and_sales = TapeReader(ticker=ticker, data_writer=config.get_can_write_data(), time_frequency=config.get_time_frequency())
         self.data = []  # Initialize variable to store candle
         self.bid = 0
         self.ask = 0
