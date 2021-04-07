@@ -36,8 +36,12 @@ class TopSalesExtractor:
             """
             if bid_size > ask_size:
                 self.top_bid_updater(ask_price, bid_price, closest_price, last_size, tick_time)
+                # Create dummy entry in ask with last size 0
+                self.top_ask_updater(ask_price, bid_price, closest_price, 0, tick_time)
             elif bid_size < ask_size:
                 self.top_ask_updater(ask_price, bid_price, closest_price, last_size, tick_time)
+                # Create dummy entry in bid with last size 0
+                self.top_bid_updater(ask_price, bid_price, closest_price, 0, tick_time)
             else:
                 if last_size is 0:
                     pass
