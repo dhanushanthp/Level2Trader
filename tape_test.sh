@@ -1,1 +1,1 @@
-python src/top_sales/top_sales_test.py
+python src/main/tape_reader_test.py

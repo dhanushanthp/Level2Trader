@@ -1,12 +1,12 @@
-from src.top_sales.tape_reader_top_sales import TapeReader
+from src.main.tape_reader import TapeReader
 import time
 
-file1 = open('data/test_data/2021040522_XELB.csv', 'r')
+file1 = open('data/test_data/2021040621_PHUN.csv', 'r')
 lines = file1.readlines()
 
 time_sale_obj = TapeReader(ticker='TEST', data_writer=False)
 
-start_time = '22:09:08'
+start_time = '21:30:00'
 enabler = False
 
 for line in lines:
@@ -31,4 +31,4 @@ for line in lines:
             time_sale_obj.level_ii_api_call(tick_time, bid_price, bid_size, ask_price, ask_size, last_price, last_size)
         else:
             time_sale_obj.time_sales_api_call(tick_time, bid_price, bid_size, ask_price, ask_size, last_price, last_size, 'EXCHANGE')
-        time.sleep(0.03)
+        time.sleep(0.1)

@@ -4,7 +4,7 @@ from ibapi.contract import Contract
 from ibapi.client import TickAttribLast, TickerId, TickAttribBidAsk
 import sys
 import datetime
-from src.top_sales.tape_reader_top_sales import TapeReader
+from src.main.tape_reader import TapeReader
 from config import Config
 
 
