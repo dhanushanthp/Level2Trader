@@ -89,7 +89,7 @@ class TapeReader:
         """
         return min([bid, ask], key=lambda x: abs(x - last))
 
-    def generate_top_sales(self, tick_time, ask_price, bid_price, closest_price, last_size):
+    def generate_top_sales(self, tick_time, ask_price, ask_size, bid_price, bid_size, closest_price, last_size):
         """
         Identification of top sales(sizes) in BID and ASK by time. If the time iterate by seconds then this function will find the top sizes on bid
         and ask in seconds. Also note than we receive more than 1 api calls within a second
@@ -98,53 +98,35 @@ class TapeReader:
 
         :param tick_time: Time of ticker
         :param ask_price: ask price, level I current ask price
+        :param ask_size
         :param bid_price: bid price, level I current bid price
+        :param bid_size
         :param closest_price: price close to bid or ask
         :param last_size: last size, time & sales
         :return:
         """
 
-        """
-        Keep track of price on BID w.r.t highest/top size by time
-        """
-        if tick_time in self.top_sales_on_bid:
+        if bid_price == ask_price:
             """
-            Last size w.r.t BID price
-            Find the closest price for last price. If the closest price match to bid price. Then the transaction considered as "Trade on BID", 
-            Bearish Signal
-
-            If the API call is from level i bid and ask, then the "last size will be 0", Therefore it will not impact the aggregation
+            When the bid price is same as ask price. we need to make a decision to assign one of the sides. Bid or ask
+            So the bid size and ask size will be used to decide the sides. Where If bid size is higher than ask price then the sales on bid and vice
+            versa
             """
-            if closest_price == bid_price:
-                # If the close price is not already created from time and sales API call, If already exist, Not need to worry
-                if closest_price in self.top_sales_on_bid[tick_time]:
-                    # Sales on bid, If the call is from Level II then the last size will be 0
-                    if last_size > self.top_sales_on_bid[tick_time][bid_price]:
-                        # Update with big size in the same time frame
-                        self.top_sales_on_bid[tick_time][bid_price] = self.pu.round_size(last_size)
-                    else:
-                        # Don't update any
-                        pass
-                else:
-                    self.top_sales_on_bid[tick_time][bid_price] = last_size
+            if bid_size > ask_size:
+                self.top_bid_updater(ask_price, bid_price, closest_price, last_size, tick_time)
+            elif bid_size < ask_size:
+                self.top_ask_updater(ask_price, bid_price, closest_price, last_size, tick_time)
             else:
-                if bid_price not in self.top_sales_on_bid[tick_time]:
-                    # Dummy bid price entry based on level II
-                    self.top_sales_on_bid[tick_time][bid_price] = 0
-
-            if ask_price not in self.top_sales_on_bid[tick_time]:
-                # Dummy ask price in "dict_last_size_on_bid" dictionary, Because the the price is on bid
-                self.top_sales_on_bid[tick_time][ask_price] = 0
+                raise Exception('Bid and ask sizes are same while the prices also same')
         else:
-            # If tick time not exist, Create entry for bid and dummy for price on ask
-            if closest_price == bid_price:
-                self.top_sales_on_bid[tick_time] = {bid_price: last_size, ask_price: 0}
-            else:
-                self.top_sales_on_bid[tick_time] = {bid_price: 0, ask_price: 0}
+            self.top_bid_updater(ask_price, bid_price, closest_price, last_size, tick_time)
 
+            self.top_ask_updater(ask_price, bid_price, closest_price, last_size, tick_time)
+
+    def top_ask_updater(self, ask_price, bid_price, closest_price, last_size, tick_time):
         """
-        Keep track of price on ASK w.r.t highest/top size by time
-        """
+                Keep track of price on ASK w.r.t highest/top size by time
+                """
         if tick_time in self.top_sales_on_ask:
             """
             Last size w.r.t ASK price
@@ -180,7 +162,44 @@ class TapeReader:
             else:
                 self.top_sales_on_ask[tick_time] = {ask_price: 0, bid_price: 0}
 
-        # self.generate_top_sales_overtime(tick_time)
+    def top_bid_updater(self, ask_price, bid_price, closest_price, last_size, tick_time):
+        """
+                Keep track of price on BID w.r.t highest/top size by time
+                """
+        if tick_time in self.top_sales_on_bid:
+            """
+            Last size w.r.t BID price
+            Find the closest price for last price. If the closest price match to bid price. Then the transaction considered as "Trade on BID", 
+            Bearish Signal
+
+            If the API call is from level i bid and ask, then the "last size will be 0", Therefore it will not impact the aggregation
+            """
+            if closest_price == bid_price:
+                # If the close price is not already created from time and sales API call, If already exist, Not need to worry
+                if closest_price in self.top_sales_on_bid[tick_time]:
+                    # Sales on bid, If the call is from Level II then the last size will be 0
+                    if last_size > self.top_sales_on_bid[tick_time][bid_price]:
+                        # Update with big size in the same time frame
+                        self.top_sales_on_bid[tick_time][bid_price] = self.pu.round_size(last_size)
+                    else:
+                        # Don't update any
+                        pass
+                else:
+                    self.top_sales_on_bid[tick_time][bid_price] = last_size
+            else:
+                if bid_price not in self.top_sales_on_bid[tick_time]:
+                    # Dummy bid price entry based on level II
+                    self.top_sales_on_bid[tick_time][bid_price] = 0
+
+            if ask_price not in self.top_sales_on_bid[tick_time]:
+                # Dummy ask price in "dict_last_size_on_bid" dictionary, Because the the price is on bid
+                self.top_sales_on_bid[tick_time][ask_price] = 0
+        else:
+            # If tick time not exist, Create entry for bid and dummy for price on ask
+            if closest_price == bid_price:
+                self.top_sales_on_bid[tick_time] = {bid_price: last_size, ask_price: 0}
+            else:
+                self.top_sales_on_bid[tick_time] = {bid_price: 0, ask_price: 0}
 
     def generate_time_and_sales(self, ask_price, bid_price, closest_price, last_size, tick_time):
         """
@@ -270,7 +289,7 @@ class TapeReader:
         :return:
         """
 
-        self.generate_top_sales(tick_time, ask_price, bid_price, closest_price, last_size)
+        self.generate_top_sales(tick_time, ask_price, ask_size, bid_price, bid_size, closest_price, last_size)
 
         self.generate_time_and_sales(ask_price, bid_price, closest_price, last_size, tick_time)
 
@@ -478,10 +497,8 @@ class TapeReader:
         global_time_limit = sorted(set(list(self.top_sales_on_bid.keys()) + list(self.top_sales_on_ask.keys())))[-self.time_ticks_filter:]
 
         # All the prices on bid within the time limit and reverse high to low
-        last_bid_prices = sorted(
+        bid_lst_price = sorted(
             list((set(itertools.chain.from_iterable([list(self.top_sales_on_bid[i].keys()) for i in global_time_limit])))), reverse=True)
-
-        bid_prices_sizes = [self.top_sales_on_bid[i] for i in global_time_limit]
 
         # All the prices on ask within the time limit and reverse low to high
         ask_lst_price = sorted(
@@ -490,12 +507,20 @@ class TapeReader:
         # All the sizes on ask within the time limit and and sorted
         last_ask_sizes = sorted(set(itertools.chain.from_iterable([self.top_sales_on_ask[i].values() for i in global_time_limit])))
 
+        # All the sizes on ask within the time limit and and sorted
+        last_bid_sizes = sorted(set(itertools.chain.from_iterable([self.top_sales_on_bid[i].values() for i in global_time_limit])))
+
+        # List of dictionaries
+        bid_prices_sizes = [self.top_sales_on_bid[i] for i in global_time_limit]
         ask_prices_sizes = [self.top_sales_on_ask[i] for i in global_time_limit]
 
         # Balance the price range
-        global_price_limit = sorted(set(last_bid_prices + ask_lst_price), reverse=True)
+        global_price_limit = sorted(set(bid_lst_price + ask_lst_price), reverse=True)
 
-        total_sizes = np.sum(last_ask_sizes + last_ask_sizes)
+        total_sizes = np.sum(last_ask_sizes + last_bid_sizes)
+        print(total_sizes)
+        # Calculate the block size for top sales histogram
+        block_size = np.mean(last_ask_sizes + last_ask_sizes)
 
         bid_rank = self.calculate_ranks(bid_prices_sizes, global_price_limit)
         ask_rank = self.calculate_ranks(ask_prices_sizes, global_price_limit)
@@ -511,7 +536,6 @@ class TapeReader:
         Generate data for the table with high sales on bid and ask within given time frame. 
         """
         table_data = []
-        block_size = 5000
         for current_time in global_time_limit:
             value_data = []
             for current_price in global_price_limit:
