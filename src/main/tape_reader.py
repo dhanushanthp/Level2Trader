@@ -5,7 +5,6 @@ from colr import color
 from config import Config
 import os
 from numerize.numerize import numerize
-from src.util import price_util
 from src.util import time_util
 from src.util import size_util
 from datetime import datetime
@@ -250,13 +249,17 @@ class TapeReader:
 
                     # Select sizes for each price and time
                     last_bid_size = self.top_se.top_sales_on_bid[current_time][current_price]
-                    last_bid_size = '(' + str(round((last_bid_size / total_sizes) * 100)).zfill(2) + '%) ' + numerize(
-                        last_bid_size) + min(round(last_bid_size / block_size), 10) * color('↓', fore=(255, 0, 0),
-                                                                                            back=(0, 0, 0)) if last_bid_size != 0 else ' '
+                    last_bid_size = numerize(last_bid_size) + ' ' + round((last_bid_size / total_sizes) * 10) * color('↓', fore=(
+                        255, 0, 0),
+                                                                                                                      back=(0, 0,
+                                                                                                                            0)) if last_bid_size != 0 else ' '
                     last_ask_size = self.top_se.top_sales_on_ask[current_time][current_price]
-                    last_ask_size = '(' + str(round((last_ask_size / total_sizes) * 100)).zfill(2) + '%) ' + numerize(
-                        last_ask_size) + min(round(last_ask_size / block_size), 10) * color('↑', fore=(0, 255, 0),
-                                                                                            back=(0, 0, 0)) if last_ask_size != 0 else ' '
+                    last_ask_size = numerize(last_ask_size) + ' ' + round((last_ask_size / total_sizes) * 10) * color('↑',
+                                                                                                                      fore=(
+                                                                                                                          0, 255,
+                                                                                                                          0),
+                                                                                                                      back=(0, 0,
+                                                                                                                            0)) if last_ask_size != 0 else ' '
 
                     normal_transaction = color(last_ask_size, fore=(0, 255, 0), back=(0, 0, 0)) + '\n' + color(last_bid_size, fore=(255, 0, 0),
                                                                                                                back=(0, 0, 0))
@@ -269,10 +272,11 @@ class TapeReader:
                     # Add the volume size
                     last_bid_size = self.top_se.top_sales_on_bid[current_time][current_price]
                     value_data.append(
-                        '\n' + color('(' + str(round((last_bid_size / total_sizes) * 100)).zfill(2) + '%) ' + numerize(last_bid_size),
+                        '\n' + color(numerize(last_bid_size),
                                      fore=(255, 0, 0),
-                                     back=(0, 0, 0)) + min(round(last_bid_size / block_size), 10) * color('↓', fore=(255, 0, 0),
-                                                                                                          back=(0, 0, 0)))
+                                     back=(0, 0, 0)) + ' ' + round((last_bid_size / total_sizes) * 10) * color('↓',
+                                                                                                               fore=(255, 0, 0),
+                                                                                                               back=(0, 0, 0)))
 
                 # Price exist in ASK but Not in BID
                 elif current_price not in self.top_se.top_sales_on_bid[current_time] and current_price in \
@@ -280,9 +284,9 @@ class TapeReader:
                     # Add the volume size
                     last_ask_size = self.top_se.top_sales_on_ask[current_time][current_price]
                     value_data.append(
-                        color('(' + str(round((last_ask_size / total_sizes) * 100)).zfill(2) + '%) ' + numerize(last_ask_size), fore=(0, 255, 0),
-                              back=(0, 0, 0)) + min(round(last_ask_size / block_size), 10) * color('↑', fore=(0, 255, 0),
-                                                                                                   back=(0, 0, 0)))
+                        color(numerize(last_ask_size), fore=(0, 255, 0),
+                              back=(0, 0, 0)) + ' ' + round((last_ask_size / total_sizes) * 10) * color('↑', fore=(0, 255, 0),
+                                                                                                        back=(0, 0, 0)))
                 else:
                     value_data.append('')
 
