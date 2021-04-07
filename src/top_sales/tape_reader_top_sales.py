@@ -182,34 +182,25 @@ class TapeReader:
 
         # self.generate_top_sales_overtime(tick_time)
 
-    def data_dictionary_generator(self, tick_time: str, bid_price: float, bid_size: int, ask_price: float, ask_size: int, closest_price: float,
-                                  last_size: int):
+    def generate_time_and_sales(self, ask_price, bid_price, closest_price, last_size, tick_time):
         """
-        This function will update the values in dictionary regardless of 1sec table print on terminal.
-
-        :param tick_time: Time of ticker
-        :param bid_price: bid price, level II first tier only
-        :param bid_size: bid size, level II first tier only
-        :param ask_price: ask price, level II first tier only
-        :param ask_size: ask size, level II first tier only
-        :param closest_price: price close to bid or ask
-        :param last_size: last size, time & sales
+        Time based accumulator dictionary is a dictionary of, dictionary data structure.
+            Dictionary: {Key: Time, value: Dictionary(key: price, value: size)}
+        The size will be updated and aggregated through the iteration process by finding time and price accordingly
+        :param ask_price:
+        :param bid_price:
+        :param closest_price:
+        :param last_size:
+        :param tick_time:
         :return:
         """
 
-        self.generate_top_sales(tick_time, ask_price, bid_price, closest_price, last_size)
-
-        """
-        Time based accumulator dictionary is a dictionary of, dictionary data structure. 
-        Dictionary: {Key: Time, value: Dictionary(key: price, value: size)}
-        The size will be updated and aggregated through the iteration process by finding time and price accordingly
-        """
         if tick_time in self.dict_last_size_on_bid:
             """
             Last size w.r.t BID price
             Find the closest price for last price. If the closest price match to bid price. Then the transaction considered as "Trade on BID", 
             Bearish Signal
-            
+
             If the API call is from level i bid and ask, then the "last size will be 0", Therefore it will not impact the aggregation
             """
             if closest_price == bid_price:
@@ -233,13 +224,12 @@ class TapeReader:
                 self.dict_last_size_on_bid[tick_time] = {bid_price: last_size, ask_price: 0}
             else:
                 self.dict_last_size_on_bid[tick_time] = {bid_price: 0, ask_price: 0}
-
         if tick_time in self.dict_last_size_on_ask:
             """
             Last size w.r.t ASK price
             Find the closest price for last price. If the closes price match to ask price. Then the transaction considered as "Trade on ASK",
             Bullish Signal
-            
+
             If the API call is from level II, then the "last size will be 0"
             """
             if closest_price == ask_price:
@@ -264,6 +254,25 @@ class TapeReader:
                 self.dict_last_size_on_ask[tick_time] = {ask_price: last_size, bid_price: 0}
             else:
                 self.dict_last_size_on_ask[tick_time] = {ask_price: 0, bid_price: 0}
+
+    def data_dictionary_generator(self, tick_time: str, bid_price: float, bid_size: int, ask_price: float, ask_size: int, closest_price: float,
+                                  last_size: int):
+        """
+        This function will update the values in dictionary regardless of 1sec table print on terminal.
+
+        :param tick_time: Time of ticker
+        :param bid_price: bid price, level II first tier only
+        :param bid_size: bid size, level II first tier only
+        :param ask_price: ask price, level II first tier only
+        :param ask_size: ask size, level II first tier only
+        :param closest_price: price close to bid or ask
+        :param last_size: last size, time & sales
+        :return:
+        """
+
+        self.generate_top_sales(tick_time, ask_price, bid_price, closest_price, last_size)
+
+        self.generate_time_and_sales(ask_price, bid_price, closest_price, last_size, tick_time)
 
     def level_ii_api_call(self, tick_time: str, bid_price, bid_size, ask_price, ask_size, last_price, last_size):
         """
