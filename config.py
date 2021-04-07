@@ -71,3 +71,10 @@ class Config:
         """
         return self.config.getboolean('DATA', 'write_data')
 
+    def get_port_number(self):
+        """
+        Get the port number from TWS service
+        :return:
+        """
+        return self.config.getint('SYSTEM', 'port_number')
+

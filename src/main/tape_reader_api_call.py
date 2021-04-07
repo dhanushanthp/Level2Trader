@@ -94,7 +94,8 @@ class IBapi(EWrapper, EClient):
 def main():
     ticker = str(sys.argv[1]).upper()
     app = IBapi(ticker)
-    app.connect(host='127.0.0.1', port=7497, clientId=19879)
+    config = Config()
+    app.connect(host='127.0.0.1', port=config.get_port_number(), clientId=19879)
 
     # Create contract object
     contract = Contract()
