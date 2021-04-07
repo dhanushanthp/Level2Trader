@@ -42,7 +42,9 @@ class TopSalesExtractor:
                 if last_size is 0:
                     pass
                 else:
-                    raise Exception('Bid and ask sizes are same while the prices also same', bid_price, ask_price, bid_size, ask_size, last_size)
+                    # If price and size same then it's an indecision point. Show in both places
+                    self.top_bid_updater(ask_price, bid_price, closest_price, last_size, tick_time)
+                    self.top_ask_updater(ask_price, bid_price, closest_price, last_size, tick_time)
         else:
             self.top_bid_updater(ask_price, bid_price, closest_price, last_size, tick_time)
             self.top_ask_updater(ask_price, bid_price, closest_price, last_size, tick_time)
