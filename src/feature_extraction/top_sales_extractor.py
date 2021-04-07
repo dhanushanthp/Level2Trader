@@ -11,7 +11,7 @@ class TopSalesExtractor:
 
         self.pu = price_util.PriceUtil()
 
-    def generate_top_sales(self, tick_time, ask_price, ask_size, bid_price, bid_size, closest_price, last_size):
+    def extract_top_sales(self, tick_time, ask_price, ask_size, bid_price, bid_size, closest_price, last_size):
         """
         Identification of top sales(sizes) in BID and ASK by time. If the time iterate by seconds then this function will find the top sizes on bid
         and ask in seconds. Also note than we receive more than 1 api calls within a second
@@ -39,7 +39,10 @@ class TopSalesExtractor:
             elif bid_size < ask_size:
                 self.top_ask_updater(ask_price, bid_price, closest_price, last_size, tick_time)
             else:
-                raise Exception('Bid and ask sizes are same while the prices also same')
+                if last_size is 0:
+                    pass
+                else:
+                    raise Exception('Bid and ask sizes are same while the prices also same', bid_price, ask_price, bid_size, ask_size, last_size)
         else:
             self.top_bid_updater(ask_price, bid_price, closest_price, last_size, tick_time)
 

@@ -99,7 +99,7 @@ should be aggregated. Because those are completed trades.
 
 
 # Backlog
-1. Filter out the smaller size trades on time and sales
+1. Filter out the smaller size trades on time and sales. Where remove the top sizes less than 1K
 2. Change the top sales on bid and ask over period from 1 min to shorter time frame (10s). So we can enter and exit trade fast. Don’t need to wait for whole 1 min. But check whether it’s working on 1 min.
 	def myround(x, base=5):
 	 	return base * round(x/base)

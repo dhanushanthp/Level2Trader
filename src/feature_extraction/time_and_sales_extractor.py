@@ -6,7 +6,7 @@ class TimeSalesExtractor:
         # Price and size w.r.t ASK and last, Bullish signal
         self.dict_last_size_on_ask = dict()
 
-    def generate_time_and_sales(self, ask_price, bid_price, closest_price, last_size, tick_time):
+    def extract_time_and_sales(self, ask_price, bid_price, closest_price, last_size, tick_time):
         """
         Time based accumulator dictionary is a dictionary of, dictionary data structure.
             Dictionary: {Key: Time, value: Dictionary(key: price, value: size)}

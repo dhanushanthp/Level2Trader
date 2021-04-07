@@ -23,8 +23,10 @@ class TapeReader:
         :param ticker:
         :param data_writer:
         """
-        self.pu = price_util.PriceUtil()
         self.su = size_util.SizeUtil()
+        self.tu = time_util.TimeUtil()
+        self.top_se = TopSalesExtractor()
+        self.time_se = TimeSalesExtractor()
 
         # Clear Terminal
         self.clear = lambda: os.system('clear')
@@ -32,18 +34,12 @@ class TapeReader:
 
         # Ticker by each second, So the size aggregation will be done by seconds
         self.ticker_name = ticker
-
-        self.pu = price_util.PriceUtil()
-        self.tu = time_util.TimeUtil()
         self.config = Config()
         self.time_ticks_filter = self.config.get_timesales_timeticks()
-
+        self.time_frequency = self.config.get_time_frequency()
         self.DATE = datetime.today().strftime('%Y%m%d%H')
 
         self.data_writer = data_writer
-
-        self.top_se = TopSalesExtractor()
-        self.time_se = TimeSalesExtractor()
 
         # Track previous bid and ask prices.
         self.previous_bid_price = 0
@@ -51,8 +47,6 @@ class TapeReader:
 
         # Track the previous time to print every second
         self.previous_time = None
-
-        self.time_frequency = self.config.get_time_frequency()
 
     def data_dictionary_generator(self, tick_time: str, bid_price: float, bid_size: int, ask_price: float, ask_size: int, closest_price: float,
                                   last_size: int):
@@ -70,10 +64,10 @@ class TapeReader:
         """
 
         # Top Sales Extraction
-        self.top_se.generate_top_sales(tick_time, ask_price, ask_size, bid_price, bid_size, closest_price, last_size)
+        self.top_se.extract_top_sales(tick_time, ask_price, ask_size, bid_price, bid_size, closest_price, last_size)
 
         # Time and Sales Extraction
-        self.time_se.generate_time_and_sales(ask_price, bid_price, closest_price, last_size, tick_time)
+        self.time_se.extract_time_and_sales(ask_price, bid_price, closest_price, last_size, tick_time)
 
     def level_ii_api_call(self, tick_time: str, bid_price, bid_size, ask_price, ask_size, last_price, last_size):
         """
