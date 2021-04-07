@@ -1,4 +1,4 @@
-from src.util import price_util
+from src.util import size_util
 
 
 class TopSalesExtractor:
@@ -9,14 +9,14 @@ class TopSalesExtractor:
         # Most hit price on bids, Bearish within the price range
         self.top_sales_on_bid = dict()
 
-        self.pu = price_util.PriceUtil()
+        self.su = size_util.SizeUtil()
 
     def extract_top_sales(self, tick_time, ask_price, ask_size, bid_price, bid_size, closest_price, last_size):
         """
         Identification of top sales(sizes) in BID and ASK by time. If the time iterate by seconds then this function will find the top sizes on bid
-        and ask in seconds. Also note than we receive more than 1 api calls within a second
+        and ask in seconds. Also note that we receive more than 1 api calls within a second
 
-        The API calls from level 1 bid & ask and time and sales won't impact the below process. Since we don't do any aggregation over time.
+        The API calls from level 1 bid & ask, time and sales won't impact the below process. Since we don't do any aggregation over time.
 
         :param tick_time: Time of ticker
         :param ask_price: ask price, level I current ask price
@@ -30,8 +30,8 @@ class TopSalesExtractor:
 
         if bid_price == ask_price:
             """
-            When the bid price is same as ask price. we need to make a decision to assign one of the sides. Bid or ask
-            So the bid size and ask size will be used to decide the sides. Where If bid size is higher than ask price then the sales on bid and vice
+            When the bid price is same as ask price. we need to make a decision to assign one of the side. Bid or ask?
+            Here the bid size and ask size will be used to decide the sides. Where If bid size is larger than ask price then the sales on bid and vice
             versa
             """
             if bid_size > ask_size:
@@ -45,34 +45,36 @@ class TopSalesExtractor:
                     raise Exception('Bid and ask sizes are same while the prices also same', bid_price, ask_price, bid_size, ask_size, last_size)
         else:
             self.top_bid_updater(ask_price, bid_price, closest_price, last_size, tick_time)
-
             self.top_ask_updater(ask_price, bid_price, closest_price, last_size, tick_time)
 
     def top_ask_updater(self, ask_price, bid_price, closest_price, last_size, tick_time):
         """
-                Keep track of price on ASK w.r.t highest/top size by time
-                """
-        if tick_time in self.top_sales_on_ask:
-            """
-            Last size w.r.t ASK price
-            Find the closest price for last price. If the closes price match to ask price. Then the transaction considered as "Trade on ASK",
+        Keep track of price on ASK w.r.t highest/top size by time.
+        Find the closest price for last price. If the closes price match to ask price. Then the transaction considered as "Trade on ASK",
             Bullish Signal
 
-            If the API call is from level II, then the "last size will be 0"
-            """
+        If the API call is from level II, then the "last size will be 0"
+
+        :param ask_price:
+        :param bid_price:
+        :param closest_price:
+        :param last_size:
+        :param tick_time:
+        :return:
+        """
+        if tick_time in self.top_sales_on_ask:
             if closest_price == ask_price:
-                # If the close price is not already created from time and sales API call, If already exist, Not need to worry
                 if closest_price in self.top_sales_on_ask[tick_time]:
-                    # Sales on ask
+                    # Execute only if the last size is larger than the previous size
                     if last_size > self.top_sales_on_ask[tick_time][ask_price]:
-                        self.top_sales_on_ask[tick_time][ask_price] = self.pu.round_size(last_size)
+                        self.top_sales_on_ask[tick_time][ask_price] = self.su.round_size(last_size)
                     else:
                         # Don't update any
                         pass
                 else:
                     self.top_sales_on_ask[tick_time][ask_price] = last_size
             else:
-                # Which is bid price, Where we should have entry on "dict_last_size_on_bid" dictionary
+                # Which is bid price, Where we should have entry on "top_sales_on_bid" dictionary
                 if ask_price not in self.top_sales_on_ask[tick_time]:
                     self.top_sales_on_ask[tick_time][ask_price] = 0
 
@@ -89,23 +91,25 @@ class TopSalesExtractor:
 
     def top_bid_updater(self, ask_price, bid_price, closest_price, last_size, tick_time):
         """
-                Keep track of price on BID w.r.t highest/top size by time
-                """
-        if tick_time in self.top_sales_on_bid:
-            """
-            Last size w.r.t BID price
-            Find the closest price for last price. If the closest price match to bid price. Then the transaction considered as "Trade on BID", 
+        Keep track of price on BID w.r.t highest/top size by time
+        Find the closest price for last price. If the closest price match to bid price. Then the transaction considered as "Trade on BID",
             Bearish Signal
 
             If the API call is from level i bid and ask, then the "last size will be 0", Therefore it will not impact the aggregation
-            """
+        :param ask_price:
+        :param bid_price:
+        :param closest_price:
+        :param last_size:
+        :param tick_time:
+        :return:
+        """
+        if tick_time in self.top_sales_on_bid:
             if closest_price == bid_price:
-                # If the close price is not already created from time and sales API call, If already exist, Not need to worry
                 if closest_price in self.top_sales_on_bid[tick_time]:
                     # Sales on bid, If the call is from Level II then the last size will be 0
                     if last_size > self.top_sales_on_bid[tick_time][bid_price]:
                         # Update with big size in the same time frame
-                        self.top_sales_on_bid[tick_time][bid_price] = self.pu.round_size(last_size)
+                        self.top_sales_on_bid[tick_time][bid_price] = self.su.round_size(last_size)
                     else:
                         # Don't update any
                         pass
