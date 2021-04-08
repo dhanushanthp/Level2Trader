@@ -9,6 +9,12 @@ class TopSalesExtractor:
         # Most hit price on bids, Bearish within the price range
         self.top_sales_on_bid = dict()
 
+        # All time high on bid
+        self.all_time_high_on_bid = dict()
+
+        # All time high on ask
+        self.all_time_high_on_ask = dict()
+
         self.su = size_util.SizeUtil()
 
     def extract_top_sales(self, tick_time, ask_price, ask_size, bid_price, bid_size, closest_price, last_size):
@@ -78,7 +84,7 @@ class TopSalesExtractor:
                         # Don't update any
                         pass
                 else:
-                    self.top_sales_on_ask[tick_time][ask_price] = last_size
+                    self.top_sales_on_ask[tick_time][ask_price] = self.su.round_size(last_size)
             else:
                 # Which is bid price, Where we should have entry on "top_sales_on_bid" dictionary
                 if ask_price not in self.top_sales_on_ask[tick_time]:
@@ -91,9 +97,21 @@ class TopSalesExtractor:
         else:
             # If tick time not exist
             if closest_price == ask_price:
-                self.top_sales_on_ask[tick_time] = {ask_price: last_size, bid_price: 0}
+                self.top_sales_on_ask[tick_time] = {ask_price: self.su.round_size(last_size), bid_price: 0}
             else:
                 self.top_sales_on_ask[tick_time] = {ask_price: 0, bid_price: 0}
+
+        """
+        Generate all time high on ask regarless of time
+        """
+        if closest_price == ask_price:
+            if ask_price in self.all_time_high_on_ask:
+                if last_size > self.all_time_high_on_ask[ask_price]:
+                    self.all_time_high_on_ask[ask_price] = self.su.round_size(last_size)
+                else:
+                    pass
+            else:
+                self.all_time_high_on_ask[ask_price] = self.su.round_size(last_size)
 
     def top_bid_updater(self, ask_price, bid_price, closest_price, last_size, tick_time):
         """
@@ -120,7 +138,7 @@ class TopSalesExtractor:
                         # Don't update any
                         pass
                 else:
-                    self.top_sales_on_bid[tick_time][bid_price] = last_size
+                    self.top_sales_on_bid[tick_time][bid_price] = self.su.round_size(last_size)
             else:
                 if bid_price not in self.top_sales_on_bid[tick_time]:
                     # Dummy bid price entry based on level II
@@ -132,6 +150,18 @@ class TopSalesExtractor:
         else:
             # If tick time not exist, Create entry for bid and dummy for price on ask
             if closest_price == bid_price:
-                self.top_sales_on_bid[tick_time] = {bid_price: last_size, ask_price: 0}
+                self.top_sales_on_bid[tick_time] = {bid_price: self.su.round_size(last_size), ask_price: 0}
             else:
                 self.top_sales_on_bid[tick_time] = {bid_price: 0, ask_price: 0}
+
+        """
+        Generate all time high on bid regarless of time
+        """
+        if closest_price == bid_price:
+            if bid_price in self.all_time_high_on_bid:
+                if last_size > self.all_time_high_on_bid[bid_price]:
+                    self.all_time_high_on_bid[bid_price] = self.su.round_size(last_size)
+                else:
+                    pass
+            else:
+                self.all_time_high_on_bid[bid_price] = self.su.round_size(last_size)
