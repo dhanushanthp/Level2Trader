@@ -228,6 +228,66 @@ class TapeReader:
 
         return global_price_limit, global_time_limit, ranks_output, total_sizes
 
+    def time_and_sales_pre_display_data(self, global_time_limit, global_price_limit):
+        # Genrate list of dictionaries
+        sales_on_bid = {i: self.time_se.dict_last_size_on_bid[i] for i in global_time_limit}
+        sales_on_ask = {i: self.time_se.dict_last_size_on_ask[i] for i in global_time_limit}
+
+        # Generate list of tuples
+        sales_on_bid = list(itertools.chain.from_iterable([zip(list(i.keys()), list(i.values())) for i in sales_on_bid.values()]))
+        sales_on_ask = list(itertools.chain.from_iterable([zip(list(i.keys()), list(i.values())) for i in sales_on_ask.values()]))
+
+        # Data frame creation
+        sales_on_bid = pd.DataFrame(sales_on_bid, columns=['price', 'bid']).groupby(['price'])['bid'].sum().reset_index()
+        sales_on_ask = pd.DataFrame(sales_on_ask, columns=['price', 'ask']).groupby(['price'])['ask'].sum().reset_index()
+
+        # Combine data
+        time_and_sales_df = sales_on_bid.merge(sales_on_ask, on=['price'], how='outer')
+        time_and_sales_df['total'] = time_and_sales_df['bid'] + time_and_sales_df['ask']
+
+        # Generate rank by sum of sales
+        time_and_sales_df['total_rank'] = time_and_sales_df['total'].rank(ascending=False).astype(int)
+        time_and_sales_df['bid'] = round((time_and_sales_df['bid'] / time_and_sales_df['total']) * 100)
+        time_and_sales_df['ask'] = round((time_and_sales_df['ask'] / time_and_sales_df['total']) * 100)
+
+        # Fill missing values with 0
+        time_and_sales_df = time_and_sales_df.fillna(0)
+        time_and_sales_df['total'] = time_and_sales_df['total'].apply(lambda x: numerize(x))
+
+        # Generated decorated percentage output
+        def percentage_output_deco(x):
+            output = color(f"{round(x['ask'])}%" if x['ask'] != 0 else '', fore=(0, 255, 0), back=(0, 0, 0)) if x['ask'] > x[
+                'bid'] else '\n' + color(f"{round(x['bid'])}%",
+                                         fore=(255, 0, 0),
+                                         back=(0, 0, 0)) if x['bid'] != 0 else ''
+
+            return output
+
+        time_and_sales_df['percentage_output'] = time_and_sales_df.apply(lambda x: percentage_output_deco(x), axis=1)
+
+        # Highlight the total output w.r.t the Total percentage on bid/ask
+        def total_sales_deco(x):
+            output = (color(x['total'], fore=(0, 255, 0), back=(0, 0, 0)) if x['ask'] > x['bid'] else '\n' + color(x['total'], fore=(255, 0, 0),
+                                                                                                                   back=(0, 0, 0))
+                      ) if (x['total_rank'] == 1) else x['total']
+
+            return output
+
+        time_and_sales_df['total'] = time_and_sales_df.apply(lambda x: total_sales_deco(x), axis=1)
+
+        total_sales_output = dict(zip(time_and_sales_df['price'], time_and_sales_df['total']))
+        total_sales_output = [total_sales_output[i] if i in total_sales_output else '' for i in global_price_limit]
+
+        # Percentage Output
+        percentage_output = dict(zip(time_and_sales_df['price'], time_and_sales_df['percentage_output']))
+        percentage_output = [percentage_output[i] if i in percentage_output else '' for i in global_price_limit]
+
+        # Rank by total sales
+        rank_total = time_and_sales_df[time_and_sales_df['total_rank'] < 4]
+        rank_by_total_sales = dict(zip(rank_total['price'], rank_total['total_rank']))
+        rank_by_total_sales = [rank_by_total_sales[i] if i in rank_by_total_sales else '' for i in global_price_limit]
+        return rank_by_total_sales, percentage_output, total_sales_output
+
     def display_data(self, closest_price: float, bid_price: float, ask_price: float, source: str):
         """
         Generate table for terminal outputs
@@ -239,50 +299,12 @@ class TapeReader:
         :return: table for terminal visualisation
         """
 
+        # Top sales pre data prep
         global_price_limit, global_time_limit, ranks_output, total_sizes = self.top_on_sales_pre_display_data()
 
-        def calculate_ratio(on_ask, on_bid, price_range):
-            on_bid = list(itertools.chain.from_iterable([zip(list(i.keys()), list(i.values())) for i in on_bid.values()]))
-            on_ask = list(itertools.chain.from_iterable([zip(list(i.keys()), list(i.values())) for i in on_ask.values()]))
-            on_bid = pd.DataFrame(on_bid, columns=['price', 'bid']).groupby(['price'])['bid'].sum().reset_index()
-            on_ask = pd.DataFrame(on_ask, columns=['price', 'ask']).groupby(['price'])['ask'].sum().reset_index()
-            merged = on_bid.merge(on_ask, on=['price'], how='outer')
-            merged['total'] = merged['bid'] + merged['ask']
-            merged['total_rank'] = merged['total'].rank(ascending=False).astype(int)
-            merged['bid'] = round((merged['bid'] / merged['total']) * 100)
-            merged['ask'] = round((merged['ask'] / merged['total']) * 100)
-            merged = merged.fillna(0)
-            merged['total'] = merged['total'].apply(lambda x: numerize(x))
-            merged['percentage_output'] = merged.apply(
-                lambda x: color(f"{round(x['ask'])}%" if x['ask'] != 0 else '', fore=(0, 255, 0), back=(0, 0, 0)) if x['ask'] > x[
-                    'bid'] else '\n' + color(f"{round(x['bid'])}%",
-                                             fore=(255, 0, 0),
-                                             back=(0, 0, 0)) if x['bid'] != 0 else '', axis=1)
-
-            # Highlight the total output w.r.t the Total percentage on bid/ask
-            merged['total'] = merged.apply(lambda x: (
-                color(x['total'], fore=(0, 255, 0), back=(0, 0, 0)) if x['ask'] > x['bid'] else '\n' + color(x['total'], fore=(255, 0, 0),
-                                                                                                             back=(0, 0, 0))
-            ) if (x['total_rank'] == 1) else x['total'], axis=1)
-
-            total_sales_output = dict(zip(merged['price'], merged['total']))
-            total_sales_output = [total_sales_output[i] if i in total_sales_output else '' for i in price_range]
-
-            # Percentage Output
-            percentage_output = dict(zip(merged['price'], merged['percentage_output']))
-            percentage_output = [percentage_output[i] if i in percentage_output else '' for i in price_range]
-
-            # Rank by total sales
-            rank_total = merged[merged['total_rank'] < 4]
-            rank_by_total_sales = dict(zip(rank_total['price'], rank_total['total_rank']))
-            rank_by_total_sales = [rank_by_total_sales[i] if i in rank_by_total_sales else '' for i in price_range]
-            return rank_by_total_sales, percentage_output, total_sales_output
-
-        # Prepare data for time and sales
-        selected_sales_on_bid = {i: self.time_se.dict_last_size_on_bid[i] for i in global_time_limit}
-        selected_sales_on_ask = {i: self.time_se.dict_last_size_on_ask[i] for i in global_time_limit}
-
-        output, p_output, total_sales = calculate_ratio(selected_sales_on_ask, selected_sales_on_bid, global_price_limit)
+        # Time and sales pre data prep
+        ranks_by_total_sales, dist_of_total_sales_on_bid_vs_ask, sum_total_sales = self.time_and_sales_pre_display_data(global_time_limit,
+                                                                                                                        global_price_limit)
 
         """
         Generate data for the table with high sales on bid and ask within given time frame. 
@@ -364,9 +386,9 @@ class TapeReader:
         # Add price and time accordingly as header and index
         table_data.append(global_price_limit)
         table_data.append(ranks_output)
-        table_data.append(output)
-        table_data.append(total_sales)
-        table_data.append(p_output)
+        table_data.append(ranks_by_total_sales)
+        table_data.append(sum_total_sales)
+        table_data.append(dist_of_total_sales_on_bid_vs_ask)
         table_data = list(map(list, zip(*table_data)))
         table_data.insert(0, global_time_limit + ['Price', 'Top S. R.', 'Total S. R.', 'Total S.', 'T. %'])
 
