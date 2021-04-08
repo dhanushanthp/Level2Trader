@@ -181,6 +181,72 @@ class TapeReader:
 
         return price_ranks
 
+    def generate_all_time_highs(self, global_price_limit):
+
+        bid = {i: self.top_se.all_time_high_on_bid[i] for i in global_price_limit if i in self.top_se.all_time_high_on_bid}
+        ask = {i: self.top_se.all_time_high_on_ask[i] for i in global_price_limit if i in self.top_se.all_time_high_on_ask}
+
+        bid = pd.DataFrame(bid.items(), columns=['price', 'bid'])
+        ask = pd.DataFrame(ask.items(), columns=['price', 'ask'])
+
+        combined = bid.merge(ask, on=['price'], how='outer')
+        combined.fillna(0, inplace=True)
+
+        combined['bid_rank'] = combined['bid'].rank(ascending=False).astype(int)
+        combined['ask_rank'] = combined['ask'].rank(ascending=False).astype(int)
+
+        combined['bid_rank'] = combined['bid_rank'].apply(lambda x: x if x <= 3 else ' ')
+        combined['ask_rank'] = combined['ask_rank'].apply(lambda x: x if x <= 3 else ' ')
+
+        combined['str_sales'] = combined.apply(lambda x: color(numerize(x['ask']), fore=(0, 255, 0), back=(0, 0, 0)) + '\n' + color(
+            numerize(x['bid']),
+            fore=(255, 0, 0), back=(0, 0, 0)), axis=1)
+
+        combined['str_rank'] = combined.apply(lambda x: color(x['ask_rank'], fore=(0, 255, 0), back=(0, 0, 0)) + '\n' + color(
+            x['bid_rank'],
+            fore=(255, 0, 0), back=(0, 0, 0)), axis=1)
+
+        sales_dictionary = dict(zip(combined['price'], combined['str_sales']))
+        rank_dictionary = dict(zip(combined['price'], combined['str_rank']))
+
+        output = [sales_dictionary[i] if i in sales_dictionary else '' for i in global_price_limit]
+        rank_output = [rank_dictionary[i] if i in rank_dictionary else '' for i in global_price_limit]
+
+        return output, rank_output
+
+    def generate_all_time_total(self, global_price_limit):
+
+        bid = {i: self.time_se.all_time_sales_bid[i] for i in global_price_limit if i in self.time_se.all_time_sales_bid}
+        ask = {i: self.time_se.all_time_sales_ask[i] for i in global_price_limit if i in self.time_se.all_time_sales_ask}
+
+        bid = pd.DataFrame(bid.items(), columns=['price', 'bid'])
+        ask = pd.DataFrame(ask.items(), columns=['price', 'ask'])
+
+        combined = bid.merge(ask, on=['price'], how='outer')
+        combined.fillna(0, inplace=True)
+
+        combined['bid_rank'] = combined['bid'].rank(ascending=False).astype(int)
+        combined['ask_rank'] = combined['ask'].rank(ascending=False).astype(int)
+
+        combined['bid_rank'] = combined['bid_rank'].apply(lambda x: x if x <= 3 else ' ')
+        combined['ask_rank'] = combined['ask_rank'].apply(lambda x: x if x <= 3 else ' ')
+
+        combined['str_sales'] = combined.apply(lambda x: color(numerize(x['ask']), fore=(0, 255, 0), back=(0, 0, 0)) + '\n' + color(
+            numerize(x['bid']),
+            fore=(255, 0, 0), back=(0, 0, 0)), axis=1)
+
+        combined['str_rank'] = combined.apply(lambda x: color(x['ask_rank'], fore=(0, 255, 0), back=(0, 0, 0)) + '\n' + color(
+            x['bid_rank'],
+            fore=(255, 0, 0), back=(0, 0, 0)), axis=1)
+
+        sales_dictionary = dict(zip(combined['price'], combined['str_sales']))
+        rank_dictionary = dict(zip(combined['price'], combined['str_rank']))
+
+        output = [sales_dictionary[i] if i in sales_dictionary else '' for i in global_price_limit]
+        rank_output = [rank_dictionary[i] if i in rank_dictionary else '' for i in global_price_limit]
+
+        return output, rank_output
+
     def top_on_sales_pre_display_data(self):
         """
         Prepare data for pre display for top sales
@@ -226,10 +292,14 @@ class TapeReader:
         # Combine the ranks
         ranks_output = ['\n'.join(x) for x in zip(top_on_ask_rank, top_on_bid_rank)]
 
-        return global_price_limit, global_time_limit, ranks_output, total_sizes
+        # Generate all time highs
+        all_time_highs, all_time_high_rank = self.generate_all_time_highs(global_price_limit)
+
+        return global_price_limit, global_time_limit, ranks_output, total_sizes, all_time_highs, all_time_high_rank
 
     def time_and_sales_pre_display_data(self, global_time_limit, global_price_limit):
-        # Genrate list of dictionaries
+
+        # Generate list of dictionaries
         sales_on_bid = {i: self.time_se.dict_last_size_on_bid[i] for i in global_time_limit}
         sales_on_ask = {i: self.time_se.dict_last_size_on_ask[i] for i in global_time_limit}
 
@@ -286,7 +356,11 @@ class TapeReader:
         rank_total = time_and_sales_df[time_and_sales_df['total_rank'] < 4]
         rank_by_total_sales = dict(zip(rank_total['price'], rank_total['total_rank']))
         rank_by_total_sales = [rank_by_total_sales[i] if i in rank_by_total_sales else '' for i in global_price_limit]
-        return rank_by_total_sales, percentage_output, total_sales_output
+
+        # Generate all time highs
+        all_time_sales, all_time_sales_rank = self.generate_all_time_total(global_price_limit)
+
+        return rank_by_total_sales, percentage_output, total_sales_output, all_time_sales, all_time_sales_rank
 
     def display_data(self, closest_price: float, bid_price: float, ask_price: float, source: str):
         """
@@ -300,11 +374,12 @@ class TapeReader:
         """
 
         # Top sales pre data prep
-        global_price_limit, global_time_limit, ranks_output, total_sizes = self.top_on_sales_pre_display_data()
+        global_price_limit, global_time_limit, ranks_output, total_sizes, all_time_highs, all_time_high_rank = self.top_on_sales_pre_display_data()
 
         # Time and sales pre data prep
-        ranks_by_total_sales, dist_of_total_sales_on_bid_vs_ask, sum_total_sales = self.time_and_sales_pre_display_data(global_time_limit,
-                                                                                                                        global_price_limit)
+        ranks_by_total_sales, dist_of_total_sales_on_bid_vs_ask, sum_total_sales, all_time_sales, all_time_sales_rank = self.time_and_sales_pre_display_data(
+            global_time_limit,
+            global_price_limit)
 
         """
         Generate data for the table with high sales on bid and ask within given time frame. 
@@ -389,11 +464,16 @@ class TapeReader:
         table_data.append(ranks_by_total_sales)
         table_data.append(sum_total_sales)
         table_data.append(dist_of_total_sales_on_bid_vs_ask)
+        table_data.append(all_time_highs)
+        table_data.append(all_time_high_rank)
+        table_data.append(all_time_sales)
+        table_data.append(all_time_sales_rank)
         table_data = list(map(list, zip(*table_data)))
-        table_data.insert(0, global_time_limit + ['Price', 'Top S. R.', 'Total S. R.', 'Total S.', 'T. %'])
+        table_data.insert(0, global_time_limit + ['Price', 'Top S. R.', 'Total S. R.', 'Total S.', 'T. %', 'All. High', 'All. High R.', 'Supp/Resis',
+                                                  'All. Sa Rank'])
 
         # Prince Description
-        print(f'{source}      {self.ticker_name}       Spread: {round(ask_price - bid_price, 2)}')
+        print(f'{source}      {self.ticker_name}       Spread: {round(ask_price - bid_price, 2)}        Timeframe:{self.time_frequency}sec')
 
         # Create table instance
         table_instance = AsciiTable(table_data)
@@ -404,5 +484,7 @@ class TapeReader:
         # Align text for price column
         time_length = len(global_time_limit)
         # Default alignment is on left
-        table_instance.justify_columns = {time_length: 'center', time_length + 1: 'center', time_length + 2: 'center', time_length + 3: 'center'}
+        table_instance.justify_columns = {time_length: 'center', time_length + 1: 'center', time_length + 2: 'center', time_length + 3: 'center',
+                                          time_length + 4: 'center', time_length + 5: 'center', time_length + 6: 'center', time_length + 7: 'center',
+                                          time_length + 8: 'center'}
         return table_instance.table
