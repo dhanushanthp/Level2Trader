@@ -6,6 +6,12 @@ class TimeSalesExtractor:
         # Price and size w.r.t ASK and last, Bullish signal
         self.dict_last_size_on_ask = dict()
 
+        # Over all sales on bid
+        self.all_time_sales_bid = dict()
+
+        # Over all sales on ask
+        self.all_time_sales_ask = dict()
+
     def extract_time_and_sales(self, ask_price, bid_price, closest_price, last_size, tick_time):
         """
         Time based accumulator dictionary is a dictionary of, dictionary data structure.
@@ -49,6 +55,15 @@ class TimeSalesExtractor:
             else:
                 self.dict_last_size_on_bid[tick_time] = {bid_price: 0, ask_price: 0}
 
+        """
+        Generate all time sales regardless of time on bid
+        """
+        if closest_price == bid_price:
+            if bid_price in self.all_time_sales_bid:
+                self.all_time_sales_bid[bid_price] = self.all_time_sales_bid[bid_price] + last_size
+            else:
+                self.all_time_sales_bid[bid_price] = last_size
+
         if tick_time in self.dict_last_size_on_ask:
             """
             Last size w.r.t ASK price
@@ -79,3 +94,12 @@ class TimeSalesExtractor:
                 self.dict_last_size_on_ask[tick_time] = {ask_price: last_size, bid_price: 0}
             else:
                 self.dict_last_size_on_ask[tick_time] = {ask_price: 0, bid_price: 0}
+
+        """
+        Generate all time sales regardless of time on ask
+        """
+        if closest_price == ask_price:
+            if ask_price in self.all_time_sales_ask:
+                self.all_time_sales_ask[ask_price] = self.all_time_sales_ask[ask_price] + last_size
+            else:
+                self.all_time_sales_ask[ask_price] = last_size
