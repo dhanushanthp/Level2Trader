@@ -1,6 +1,8 @@
 # Information
+## Equity Market
 * Level 2 will show full depth. The market data subscriptions for Depth of Book (Level 2) quotes on US stocks are NYSE OpenBook, NYSE ArcaBook, NASDAQ TotalView-OpenView, NASDAQ BX TotalView and Cboe BZX Depth of Book.
 * Call reqMarketDepth instead of reqTickbyTick for level II data. https://interactivebrokers.github.io/tws-api/market_depth.html
+
 
 
 Level 1 would be the current best bid/offer prices
@@ -18,6 +20,10 @@ We are trying to implement the bit and ask on sales
 
 is there any way to find my market data through api is limited already? While I’m using the api?
 Kunal Sa: you can find the exact number of market data lines by pressing key combination Ctrl-Alt-= on TWS
+
+## Forex market
+The tickbytick api don't provide last and actual prices and size. We can only see the bid and ask estimation
+event the midprice is just average of bid and ask.
 
 # BID and ASK  VS Last
 The bid and ask should not be aggregated. Because those are not executed trades. It's just display as a flash values. On other hand the last data 

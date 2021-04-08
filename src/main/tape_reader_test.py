@@ -2,12 +2,14 @@ from src.main.tape_reader import TapeReader
 from config import Config
 import time
 
-file1 = open('data/test_data/2021040721_SOS.csv', 'r')
+file_name = 'data/test_data/2021040721_SOS.csv'
+file1 = open(file_name, 'r')
 lines = file1.readlines()
 
 config = Config()
+ticker = f"TEST: {file_name.split('/')[-1].split('_')[-1].split('.')[0]}"
 
-time_sale_obj = TapeReader(ticker='TEST', data_writer=True, time_frequency=config.get_time_frequency())
+time_sale_obj = TapeReader(ticker=ticker, data_writer=False, time_frequency=config.get_time_frequency())
 
 start_time = '21:18:53'
 enabler = False
@@ -34,4 +36,4 @@ for line in lines:
             time_sale_obj.level_ii_api_call(tick_time, bid_price, bid_size, ask_price, ask_size, last_price, last_size)
         else:
             time_sale_obj.time_sales_api_call(tick_time, bid_price, bid_size, ask_price, ask_size, last_price, last_size, 'EXCHANGE')
-        time.sleep(0.1)
+        time.sleep(0.02)

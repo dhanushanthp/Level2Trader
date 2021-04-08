@@ -3,23 +3,24 @@ import time
 from watchdog.observers import Observer
 from watchdog.events import FileModifiedEvent
 from watchdog.events import FileSystemEventHandler
-from src.main import top_sales_tracker
+from src.higher_timeframe.read_higher_data import HigherScale
 
 
 class TriggerOnChange(FileSystemEventHandler):
     def __init__(self):
-        self.top_tracker_obj = top_sales_tracker.TopSalesTracker()
+        self.top_tracker_obj = HigherScale()
 
     def on_modified(self, event: FileModifiedEvent):
         # Call the function to update the terminal
-        path_to_file = event.src_path
-        self.top_tracker_obj.generate_terminal_data(path_to_file)
+        # path_to_file = event.src_path
+        # print(path_to_file)
+        self.top_tracker_obj.generate_output()
 
 
 if __name__ == "__main__":
     event_handler = TriggerOnChange()
     observer = Observer()
-    observer.schedule(event_handler, path='data/tape_data/top_sales_on_bids_ask.json', recursive=False)
+    observer.schedule(event_handler, path='data/tape_data/tape_data_higher_frame.csv', recursive=False)
     observer.start()
 
     try:
