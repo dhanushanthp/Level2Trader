@@ -30,8 +30,8 @@ def animate(i):
     plt.tick_params(axis='y', which='both', labelleft='off', labelright='on')
 
     # Annotate the bar with values
-    plt.bar_label(container=bar_bids, labels=[numerize(i) for i in x1], padding=-10)
-    plt.bar_label(container=bar_ask, labels=[numerize(i) for i in x2], padding=-10)
+    plt.bar_label(container=bar_bids, labels=[numerize(i) for i in x1], padding=-45)
+    plt.bar_label(container=bar_ask, labels=[numerize(i) for i in x2], padding=-45)
 
     # plt.legend(loc='upper right')
     plt.ylabel('Price')
