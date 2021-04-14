@@ -59,6 +59,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/src/feature_extraction/time_and_sales_extractor.py">
+          <value>
+            <Attribute>
+              <option name="separator" value=":" />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/src/tape_reading/tape_reader_test.py">
           <value>
             <Attribute>
@@ -74,6 +81,13 @@
           </value>
         </entry>
         <entry key="/src/top_sales/tape_reader_top_sales.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/src/visualizer/test.py">
           <value>
             <Attribute>
               <option name="separator" value="," />

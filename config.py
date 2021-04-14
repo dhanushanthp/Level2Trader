@@ -78,3 +78,8 @@ class Config:
         """
         return self.config.getint('SYSTEM', 'port_number')
 
+    def get_time_sales_source_name(self):
+        return 'T&S'
+
+    def get_bid_ask_source_name(self):
+        return 'B&A'
