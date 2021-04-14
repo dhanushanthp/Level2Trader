@@ -6,7 +6,7 @@ from numerize.numerize import numerize
 
 plt.style.use('ggplot')
 chart_width = 10
-chart_height = 5
+chart_height = 6
 plt.figure(figsize=(chart_width, chart_height))
 plt.rcParams['toolbar'] = 'None'
 
