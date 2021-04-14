@@ -23,10 +23,6 @@ class TapeReader:
         :param ticker:
         :param data_writer:
         """
-        self.su = size_util.SizeUtil()
-        self.tu = time_util.TimeUtil()
-        self.top_se = TopSalesExtractor()
-        self.time_se = TimeSalesExtractor()
 
         # Clear Terminal
         self.clear = lambda: os.system('clear')
@@ -47,6 +43,11 @@ class TapeReader:
 
         # Track the previous time to print every second
         self.previous_time = None
+
+        self.su = size_util.SizeUtil()
+        self.tu = time_util.TimeUtil()
+        self.top_se = TopSalesExtractor()
+        self.time_se = TimeSalesExtractor()
 
     def data_dictionary_generator(self, tick_time: str, bid_price: float, bid_size: int, ask_price: float, ask_size: int, closest_price: float,
                                   last_size: int):
@@ -93,10 +94,13 @@ class TapeReader:
         :param last_size: last size, time & sales
         :return: None, Show table in terminal
         """
+
+        source = self.config.get_bid_ask_source_name()
+
         # Write data to file
         if self.data_writer:
             with open(f'data/test_data/{self.DATE}_{self.ticker_name}.csv', 'a') as file_writer:
-                file_writer.write(f'{tick_time},{bid_price},{bid_size},{ask_price},{ask_size},{last_price},{last_size},l2\n')
+                file_writer.write(f'{tick_time},{bid_price},{bid_size},{ask_price},{ask_size},{last_price},{last_size},{source}\n')
 
         tick_time_split = tick_time.split(":")
         tick_time = ':'.join(tick_time_split[:-1]) + ':' + self.tu.round_time(int(tick_time_split[-1]), base=self.time_frequency)
@@ -131,11 +135,12 @@ class TapeReader:
         :param exchange:
         :return: None, Show table in terminal
         """
+        source = self.config.get_time_sales_source_name()
 
         # Write data to file
         if self.data_writer:
             with open(f'data/test_data/{self.DATE}_{self.ticker_name}.csv', 'a') as file_writer:
-                file_writer.write(f'{tick_time},{bid_price},{bid_size},{ask_price},{ask_size},{last_price},{last_size},t&s\n')
+                file_writer.write(f'{tick_time},{bid_price},{bid_size},{ask_price},{ask_size},{last_price},{last_size},{source}\n')
 
         tick_time_split = tick_time.split(":")
         tick_time = ':'.join(tick_time_split[:-1]) + ':' + self.tu.round_time(int(tick_time_split[-1]), base=self.time_frequency)
@@ -183,8 +188,10 @@ class TapeReader:
 
     def generate_all_time_highs(self, global_price_limit):
 
-        bid = {i: self.top_se.all_time_high_on_bid[i] for i in global_price_limit if i in self.top_se.all_time_high_on_bid}
-        ask = {i: self.top_se.all_time_high_on_ask[i] for i in global_price_limit if i in self.top_se.all_time_high_on_ask}
+        # bid = {i: self.top_se.all_time_high_on_bid[i] for i in global_price_limit if i in self.top_se.all_time_high_on_bid}
+        # ask = {i: self.top_se.all_time_high_on_ask[i] for i in global_price_limit if i in self.top_se.all_time_high_on_ask}
+        bid = self.top_se.all_time_high_on_bid
+        ask = self.top_se.all_time_high_on_ask
 
         bid = pd.DataFrame(bid.items(), columns=['price', 'bid'])
         ask = pd.DataFrame(ask.items(), columns=['price', 'ask'])
@@ -192,12 +199,22 @@ class TapeReader:
         combined = bid.merge(ask, on=['price'], how='outer')
         combined.fillna(0, inplace=True)
 
+        now = datetime.now()
+        minu, sec = [int(i) for i in now.strftime('%M:%S').split(':')]
+        # Reset chart data for every 1 min
+        if (minu % 1 == 0 and sec in [58, 59]) or (len(self.top_se.all_time_high_on_bid) > 12):
+            self.top_se.all_time_high_on_bid = dict()
+            self.top_se.all_time_high_on_ask = dict()
+
         combined.to_csv('data/real_time_data_output/all_time_high.csv', index=False)
 
     def generate_all_time_total(self, global_price_limit):
 
-        bid = {i: self.time_se.all_time_sales_bid[i] for i in global_price_limit if i in self.time_se.all_time_sales_bid}
-        ask = {i: self.time_se.all_time_sales_ask[i] for i in global_price_limit if i in self.time_se.all_time_sales_ask}
+        # bid = {i: self.time_se.all_time_sales_bid[i] for i in global_price_limit if i in self.time_se.all_time_sales_bid}
+        # ask = {i: self.time_se.all_time_sales_ask[i] for i in global_price_limit if i in self.time_se.all_time_sales_ask}
+
+        bid = self.time_se.all_time_sales_bid
+        ask = self.time_se.all_time_sales_ask
 
         bid = pd.DataFrame(bid.items(), columns=['price', 'bid'])
         ask = pd.DataFrame(ask.items(), columns=['price', 'ask'])
@@ -207,6 +224,13 @@ class TapeReader:
 
         combined['bid_rank'] = combined['bid'].rank(ascending=False).astype(int)
         combined['ask_rank'] = combined['ask'].rank(ascending=False).astype(int)
+
+        now = datetime.now()
+        minu, sec = [int(i) for i in now.strftime('%M:%S').split(':')]
+        # Reset chart data for every 1 min
+        if (minu % 1 == 0 and sec in [58, 59]) or (len(self.time_se.all_time_sales_bid) > 12):
+            self.time_se.all_time_sales_bid = dict()
+            self.time_se.all_time_sales_ask = dict()
 
         combined.to_csv('data/real_time_data_output/all_time_sales.csv', index=False)
 
@@ -431,7 +455,8 @@ class TapeReader:
         table_data.insert(0, global_time_limit + ['Price', 'Top S. R.', 'Total S. R.', 'Total S.', 'T. %'])
 
         # Prince Description
-        print(f'{source}      {self.ticker_name}       Spread: {round(ask_price - bid_price, 2)}        Timeframe:{self.time_frequency}sec')
+        print(
+            f'{source}      {self.ticker_name}       Spread: {round(ask_price - bid_price, 2)}        Timeframe:{self.time_frequency}sec')
 
         # Create table instance
         table_instance = AsciiTable(table_data)
