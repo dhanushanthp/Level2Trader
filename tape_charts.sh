@@ -1,2 +1,1 @@
-python src/visualizer/all_time_high.py &
-python src/visualizer/all_time_sales.py &
+python src/visualizer/high_and_total_on_sales.py &

@@ -24,10 +24,6 @@ def animate(i):
     hig_on_sales = pd.read_csv('data/real_time_data_output/all_time_high.csv')
     hig_on_sales.sort_values(['price'], inplace=True)
 
-    speed = pd.read_csv('data/real_time_data_output/speed.csv')
-    speed.sort_values(['time'], inplace=True)
-    speed = speed.tail(20).copy()
-
     records_idx = np.arange(len(hig_on_sales['price']))  # the label locations
     # Ratio, If we use 0.5 then it will be bar without gaps since we have 2 bar side by size. The max value is 1 same as 100% space for bar
     bar_width = 0.45
