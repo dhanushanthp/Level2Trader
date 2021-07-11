@@ -12,12 +12,14 @@ class IBapi(EWrapper, EClient):
     def __init__(self, ticker):
         """
         The table will be updated with time and sales last function and level II bid and ask function. Since the functions are asynchronous calls
-        we need to update values in both places with the same object
+        we need to update values in both places with the same object.
+
+        The values will be pushed to objects using functions.
         :param ticker:
         """
         EClient.__init__(self, self)
         config = Config()
-        self.time_and_sales = TapeReader(ticker=ticker, data_writer=config.get_can_write_data(), time_frequency=config.get_time_frequency())
+        self.ibapi_ref = TapeReader(ticker=ticker, data_writer=config.get_can_write_data(), time_frequency=config.get_time_frequency())
         self.data = []  # Initialize variable to store candle
         self.bid = 0
         self.ask = 0
@@ -31,7 +33,7 @@ class IBapi(EWrapper, EClient):
     def tickByTickAllLast(self, reqId: int, tickType: int, ticktime: int, price: float, size: int, tickAtrribLast: TickAttribLast, exchange: str,
                           specialConditions: str):
         """
-        Load the ticker All last Data
+        Load the ticker All last Data. The values from API will be pushed to relevant objects
         :param reqId:
         :param tickType:
         :param ticktime:
@@ -53,13 +55,13 @@ class IBapi(EWrapper, EClient):
             """
             # TODO add the level II time stamp in below condition, If both time stamp match then process data
             if (self.bid != 0) and (self.ask != 0):
-                self.time_and_sales.time_sales_api_call(datetime.datetime.fromtimestamp(ticktime).strftime("%H:%M:%S"), self.bid, self.bid_size,
-                                                        self.ask, self.ask_size, price, size, exchange)
+                self.ibapi_ref.time_sales_api_call(datetime.datetime.fromtimestamp(ticktime).strftime("%H:%M:%S"), self.bid, self.bid_size,
+                                                   self.ask, self.ask_size, price, size, exchange)
 
     def tickByTickBidAsk(self, reqId: int, ticktime: int, bidPrice: float, askPrice: float, bidSize: int, askSize: int,
                          tickAttribBidAsk: TickAttribBidAsk):
         """
-        Update the bid and ask price when ever the function triggered
+        Update the bid and ask price when ever the function triggered.  The values from API will be pushed to relevant objects
         :param reqId:
         :param ticktime:
         :param bidPrice:
@@ -87,8 +89,8 @@ class IBapi(EWrapper, EClient):
         3. The last size will be 0. Because at level II update the time and sales won't get updated
         """
         if self.last != 0:
-            self.time_and_sales.level_ii_api_call(datetime.datetime.fromtimestamp(ticktime).strftime("%H:%M:%S"), self.bid, self.bid_size,
-                                                  self.ask, self.ask_size, self.last, 0)
+            self.ibapi_ref.level_ii_api_call(datetime.datetime.fromtimestamp(ticktime).strftime("%H:%M:%S"), self.bid, self.bid_size,
+                                             self.ask, self.ask_size, self.last, 0)
 
 
 def main():
