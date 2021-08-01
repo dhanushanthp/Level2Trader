@@ -1,8 +1,9 @@
 # Information
+Read level 2 and tape data in realtime to identify the possible outbreaks based on high on sales and high big and ask.
+
 ## Equity Market
 * Level 2 will show full depth. The market data subscriptions for Depth of Book (Level 2) quotes on US stocks are NYSE OpenBook, NYSE ArcaBook, NASDAQ TotalView-OpenView, NASDAQ BX TotalView and Cboe BZX Depth of Book.
 * Call reqMarketDepth instead of reqTickbyTick for level II data. https://interactivebrokers.github.io/tws-api/market_depth.html
-
 
 
 Level 1 would be the current best bid/offer prices

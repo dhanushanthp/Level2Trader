@@ -49,7 +49,7 @@ class TopSalesExtractor:
                 # Create dummy entry in bid with last size 0
                 self.top_bid_updater(ask_price, bid_price, closest_price, 0, tick_time)
             else:
-                if last_size is 0:
+                if last_size == 0:
                     pass
                 else:
                     # If price and size same then it's an indecision point. Show in both places

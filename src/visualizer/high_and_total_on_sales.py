@@ -12,7 +12,7 @@ chart_width = 15
 chart_height = 6
 
 # create a figure with two subplots
-fig, ax = plt.subplots(ncols=2, figsize=(chart_width, chart_height))
+fig, ax = plt.subplots(ncols=3, figsize=(chart_width, chart_height))
 ax[0].invert_xaxis()
 fig.text(0.5, 0.01, 'Number of shares', ha='center')
 

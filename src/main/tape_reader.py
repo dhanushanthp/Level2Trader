@@ -25,7 +25,7 @@ class TapeReader:
         """
 
         # Clear Terminal
-        self.clear = lambda: os.system('clear')
+        self.clear = lambda: os.system('cls')
         self.clear_counter = 0
 
         # Ticker by each second, So the size aggregation will be done by seconds
@@ -48,6 +48,9 @@ class TapeReader:
         self.tu = time_util.TimeUtil()
         self.top_se = TopSalesExtractor()
         self.time_se = TimeSalesExtractor()
+
+        # Speed calculator
+        # self.speed = 0
 
     def data_dictionary_generator(self, tick_time: str, bid_price: float, bid_size: int, ask_price: float, ask_size: int, closest_price: float,
                                   last_size: int):
@@ -97,7 +100,7 @@ class TapeReader:
 
         source = self.config.get_bid_ask_source_name()
 
-        # Write data to file
+        # Write data to file, Boolean function to write or not
         if self.data_writer:
             with open(f'data/test_data/{self.DATE}_{self.ticker_name}.csv', 'a') as file_writer:
                 file_writer.write(f'{tick_time},{bid_price},{bid_size},{ask_price},{ask_size},{last_price},{last_size},{source}\n')
@@ -116,7 +119,8 @@ class TapeReader:
         if (bool(self.top_se.top_sales_on_ask)) and (bool(self.top_se.top_sales_on_bid)) and (
                 self.previous_time != tick_time):
             self.clear()
-            print(self.display_data(closest_price, bid_price, ask_price, 'B&A'))
+            # print(self.speed)
+            # print(self.display_data(closest_price, bid_price, ask_price, 'B&A'))
             self.previous_time = tick_time
 
         # Update the level II bid and ask with sizes
@@ -142,11 +146,18 @@ class TapeReader:
             with open(f'data/test_data/{self.DATE}_{self.ticker_name}.csv', 'a') as file_writer:
                 file_writer.write(f'{tick_time},{bid_price},{bid_size},{ask_price},{ask_size},{last_price},{last_size},{source}\n')
 
+            with open(f'data/test_data/{self.DATE}_{self.ticker_name}_tape.csv', 'a') as file_writer:
+                file_writer.write(f'{tick_time},{bid_price},{bid_size},{ask_price},{ask_size},{last_price},{last_size},{source}\n')
+
         tick_time_split = tick_time.split(":")
+        # Extract time
         tick_time = ':'.join(tick_time_split[:-1]) + ':' + self.tu.round_time(int(tick_time_split[-1]), base=self.time_frequency)
 
         if self.previous_time is None:
             self.previous_time = tick_time
+
+        # Trigger speed calculator
+        # self.speed_calculator(tick_time, last_size)
 
         # Find the closest price w.r.t to last price on bid or ask
         closest_price = self.su.find_closest(bid_price, ask_price, last_price)
@@ -154,7 +165,8 @@ class TapeReader:
         if self.previous_time != tick_time:
             self.clear()
             # This function needs to be triggered before calling data dictionary generator to avoid the next time tick partial call
-            print(self.display_data(closest_price, bid_price, ask_price, 'T&S'))
+            # print(self.speed)
+            # print(self.display_data(closest_price, bid_price, ask_price, 'T&S'))
             self.previous_time = tick_time
 
         self.data_dictionary_generator(tick_time, bid_price, bid_size, ask_price, ask_size, closest_price, last_size)
